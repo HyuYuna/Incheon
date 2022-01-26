@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="history">
+  
+   	 <!-- 사용자 연혁 그룹 리스트 -->
+     <select id="historyUserGroupList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+         SELECT A.YEAR_TEXT FROM TB_HISTORY A 
+	     GROUP BY A.YEAR_TEXT 
+         ORDER BY A.YEAR_TEXT DESC 
+     </select>
+     
+  	 <!-- 사용자 연혁 리스트 -->
+     <select id="historyUserList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+         SELECT A.* FROM TB_HISTORY A 
+	     WHERE 1 = 1
+	     AND A.YEAR_TEXT = #{year_text,		jdbcType=CHAR}
+		ORDER BY A.ORD ASC       
+     </select>
+     
+	 <!-- 연혁 리스트 -->
+     <select id="historyList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+         SELECT A.* FROM TB_HISTORY A 
+	     WHERE 1 = 1
+		 <include refid="listSearch"></include>
+		ORDER BY A.ORD ASC       
+     </select>
+  
+   <!-- 연혁 리스트 카운터 -->
+   <select id="historyListCount" parameterType="java.util.Map"   resultType="int">      
+         SELECT count(*)
+ 	     FROM TB_HISTORY A
+	     WHERE 1 = 1
+		 <include refid="listSearch"></include>
+     </select>
+ 
+  <!-- 리스트 검색조건 -->
+  <sql id="listSearch">
+		<if test="keyword !=null and keyword != '' ">
+			 <if test="keykind == 'title'">  AND A.TITLE  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == ''">  AND (A.TITLE  like '%' || #{keyword} || '%') </if>
+		</if>	
+		<if test="txt_sdate != null and txt_sdate != '' and txt_edate != null and txt_edate != ''">
+			AND SUBSTR(A.REG_DT,1,8) BETWEEN REPLACE(#{txt_sdate}, '-','') AND REPLACE(#{txt_edate}, '-','')
+		</if>
+  </sql>
+  
+   <!-- 연혁 상세내용 -->
+  <select id="historyDetail"  parameterType="java.util.Map"  resultType="java.util.HashMap">  	  	 
+	      SELECT * 
+	      FROM TB_HISTORY
+	      WHERE SEQ = #{seq, jdbcType=INTEGER}       
+  </select>  
+  
+  <!-- 연혁 INSERT -->
+  <insert id="historyInsert" parameterType="java.util.Map">
+  		INSERT INTO TB_HISTORY
+  		(
+			SEQ,
+			TITLE,
+			YEAR_TEXT,
+			MONTH_TEXT,
+			MENU_GB,
+			ORD,
+			MD_DT,
+			REG_DT
+  		)
+  		VALUES 
+  		(
+  			SEQ_TB_HISTORY_SEQ.nextval,
+			#{title,								jdbcType=VARCHAR},
+			#{year_text,						jdbcType=CHAR},
+			#{month_text,						jdbcType=VARCHAR},
+			#{menu_gb,						jdbcType=VARCHAR},
+			#{ord,								jdbcType=INTEGER},
+			to_char(sysdate, 'yyyymmddhh24miss'), 
+			to_char(sysdate, 'yyyymmddhh24miss') 	
+  		)
+  </insert>
+	
+  <!-- 연혁 UPDATE -->
+  <update id="historyUpdate" parameterType="java.util.Map">
+  		UPDATE TB_HISTORY SET
+ 			TITLE					= #{title,							jdbcType=VARCHAR},
+			YEAR_TEXT			= #{year_text,					jdbcType=CHAR},
+			MONTH_TEXT		= #{month_text,					jdbcType=VARCHAR},
+			MENU_GB			= #{menu_gb,						jdbcType=VARCHAR},
+			ORD					= #{ord,								jdbcType=INTEGER},
+			MD_DT				= to_char(sysdate, 'yyyymmddhh24miss')
+		WHERE SEQ = #{seq, jdbcType=INTEGER}
+  </update>
+  
+  <!-- 연혁 DELETE -->
+  <delete id="historyDelete" parameterType="java.util.Map">
+  		DELETE FROM TB_HISTORY
+  		WHERE SEQ = #{seq, jdbcType=INTEGER}
+  </delete>
+     
+</mapper>

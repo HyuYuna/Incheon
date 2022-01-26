@@ -1,0 +1,138 @@
+@charset "utf-8";
+/**************************************************
+
+	SUPERBOARD :: FORM SKIN :: default
+
+**************************************************/
+#sb-mbjoin .step{margin-bottom: 30px;}
+#sb-mbjoin .step > img{width: 100%;height: auto;}
+#sb-mbjoin .inner{border: 8px solid #f5f5f5;padding: 30px 45px;}
+#sb-mbjoin fieldset{border-bottom: 1px solid #dddddd;padding-bottom: 30px;margin-bottom: 30px;}
+#sb-mbjoin fieldset legend{display: block;margin-bottom: 20px;font-weight: normal;font-size: 18px;color: #000;}
+#sb-mbjoin .scrollArea{display: block;padding: 15px;background: #f3f4f7;border: 1px solid #ddd;height: 200px;overflow-y: scroll;white-space: pre-wrap;}
+#sb-mbjoin .chkArea{display: block;padding: 10px 0;text-align: right;}
+
+#sb-mbjoin2 .step{margin-bottom: 30px;}
+#sb-mbjoin2 .step > img{width: 100%;height: auto;}
+#sb-mbjoin2 .inner{border: 8px solid #f5f5f5;padding: 30px 45px;}
+#sb-mbjoin2 fieldset{border-bottom: 1px solid #dddddd;padding-bottom: 30px;margin-bottom: 30px;}
+#sb-mbjoin2 fieldset legend{display: none;}
+#sb-mbjoin2 .join_tbl{width: 100%;}
+#sb-mbjoin2 .join_tbl tr > *{border-top: 1px solid #dddddd;padding: 15px 10px;}
+#sb-mbjoin2 .join_tbl tr:first-child > *{border-top: none;}
+#sb-mbjoin2 .join_tbl tbody th{font-weight: normal;font-size: 14px;line-height: 18px;color: #000;font-size: 16px;text-align: left;}
+#sb-mbjoin2 .join_tbl tbody th em{font-style: normal;margin-right: 3px;color: #f43e26;}
+#sb-mbjoin2 .join_tbl tbody td{font-size: 14px;line-height: 18px;}
+#sb-mbjoin2 .join_tbl .inp{width: 250px;height: 35px;line-height: 35px;padding: 0 15px;background: #ffffff;border: 1px solid #dddddd;}
+#sb-mbjoin2 .join_tbl .w150{width: 150px;}
+#sb-mbjoin2 .join_tbl .w50{width: 47%;}
+#sb-mbjoin2 .join_tbl select{height: 35px;line-height: 35px;padding: 0 10px;background: #ffffff;border: 1px solid #dddddd;}
+#sb-mbjoin2 .join_tbl textarea{width: 100%;height: 100px;background: #ffffff;border: 1px solid #ddd;padding: 10px;font-size: 14px;line-height: 18px;}
+#sb-mbjoin2 .join_tbl hr{border: none;margin: 3px 0;}
+#sb-mbjoin2 .join_tbl em.tbl_sment{display: block;margin: 5px 0;font-size: 12px;color: #333333;font-style: normal;}
+#sb-mbjoin2 .join_tbl #idchk_validt{font-size: 14px;line-height: 18px;color: #000;font-style: normal;}
+
+#sb-mbjoinSuccess .step{margin-bottom: 30px;}
+#sb-mbjoinSuccess .step > img{width: 100%;height: auto;}
+#sb-mbjoinSuccess .inner{border: 8px solid #f5f5f5;padding: 80px 45px;}
+#sb-mbjoinSuccess dl dt{margin-bottom: 30px;background: url(/webContents/app/images/sb_join_succ_tit.jpg) no-repeat center 0;height: 93px;}
+#sb-mbjoinSuccess.emailChk dl dt{background-image: url(/webContents/app/images/sb_join_succ2_tit.jpg);}
+#sb-mbjoinSuccess dl dt h4{text-indent: -999em;}
+#sb-mbjoinSuccess dl dd h5{font-size: 26px;line-height: 26px;color: #000000;text-align: center;font-weight: normal;margin-bottom: 25px;letter-spacing: -1px;}
+#sb-mbjoinSuccess dl dd p{display: block;font-size: 18px;line-height: 28px;color: #000000;text-align: center;}
+
+#sb-mblogin{position: relative;border: 8px solid #f5f5f5;padding: 30px 0;}
+#sb-mblogin{position: relative;zoom: 1;}
+#sb-mblogin:after{display: block;content: '';clear: both;}
+#sb-mblogin:before{content: '';display: block;position: absolute;top: 0;left: 50%;width: 1px;height: 100%;background: #ddd;}
+#sb-mblogin > fieldset{float: left;width: 50%;padding: 20px 0;}
+#sb-mblogin > fieldset .inner{position: relative;width: 80%;margin: 0 auto;height: 280px;background-position: right bottom;background-repeat: no-repeat;}
+#sb-mblogin > fieldset.login .inner{background-image: url(/webContents/app/images/sb_login_fdbg_login.jpg);}
+#sb-mblogin > fieldset.join .inner{background-image: url(/webContents/app/images/sb_login_fdbg_join.jpg);}
+#sb-mblogin h4{font-size: 24px;line-height: 24px;font-weight: normal;color: #000;margin-bottom: 25px;}
+#sb-mblogin legend{display: block;margin-bottom: 10px;font-size: 16px;line-height: 20px;color: #555555;}
+#sb-mblogin .inp{width: 100%;height: 40px;line-height: 40px;padding: 0 10px;font-size: 14px;border: 1px solid #ddd;background: none;margin-bottom: 10px;}
+#sb-mblogin .chkWrap{position: relative;}
+#sb-mblogin .chkWrap label{font-size: 14px;}
+#sb-mblogin .chkWrap .findBtn{position: absolute;top: 0;right: 0;color: #333333;display: inline-block;*display: inline;*zoom: 1;vertical-align: top;padding-bottom: 3px;text-decoration: none;font-size: 14px;}
+#sb-mblogin .chkWrap .findBtn:after{position: absolute;bottom: 0;left: 0;width: 100%;height: 1px;background: #333333;}
+#sb-mblogin .btnWrap{position: absolute;bottom: 0;left: 0;width: 100%;}
+#sb-mblogin .btnWrap .btn{display: block;margin-top: 5px;width: 150px;height: 40px;line-height: 40px;text-decoration: none;text-align: center;border: none;font-size: 14px;}
+#sb-mblogin .btnWrap .btn.type1{background: #2e2e2e;border: 1px solid #2e2e2e;color: #fff;}
+#sb-mblogin .btnWrap .btn.type2{background: #ffffff;border: 1px solid #2e2e2e;color: #000;}
+
+#sb-snslogin{background: #f5f5f5;padding: 30px;}
+#sb-snslogin .tit{margin-bottom: 15px;}
+#sb-snslogin .tit h4{text-align: center;font-size: 18px;color: #000000;margin-bottom: 10px;}
+#sb-snslogin .tit em{display: block;text-align: center;font-style: normal;font-size: 16px;color: #555555;}
+#sb-snslogin fieldset{text-align: center;}
+#sb-snslogin fieldset input{margin: 0 2px;text-indent: -999em;background-size: cover;border: none;width: 50px;height: 50px;}
+#sb-snslogin fieldset input.t{background-image: url(/webContents/app/images/sb_sns_ico_t.jpg);}
+#sb-snslogin fieldset input.f{background-image: url(/webContents/app/images/sb_sns_ico_f.jpg);}
+#sb-snslogin fieldset input.g{background-image: url(/webContents/app/images/sb_sns_ico_g.jpg);}
+#sb-snslogin fieldset input.n{background-image: url(/webContents/app/images/sb_sns_ico_n.jpg);}
+#sb-snslogin fieldset input.k{background-image: url(/webContents/app/images/sb_sns_ico_k.jpg);}
+
+#sb-findid .inner{border: 8px solid #f5f5f5;padding: 80px 45px;}
+#sb-findid dl dt{margin-bottom: 30px;background: url(/webContents/app/images/sb_findid_tit.jpg) no-repeat center 0;height: 93px;}
+#sb-findid dl dt h4{text-indent: -999em;}
+#sb-findid dl dd h5{font-size: 26px;line-height: 26px;color: #000000;text-align: center;font-weight: normal;margin-bottom: 25px;letter-spacing: -1px;}
+#sb-findid dl dd p{display: block;font-size: 18px;line-height: 28px;color: #000000;text-align: center;}
+#sb-findid dl dd .inpWrap{;width: 400px;margin: 20px auto 0 auto;}
+#sb-findid dl dd .inp{width: 100%;display: block;margin-bottom: 10px;}
+
+@media screen and (max-width: 750px) {
+	#sb-mbjoin .step{display: none;}
+	#sb-mbjoin .inner{border-width:4px;padding: 10px;}
+	#sb-mbjoin fieldset{padding-bottom: 15px;margin-bottom: 15px;}
+	#sb-mbjoin fieldset legend{margin-bottom: 10px;font-size: 14px;}
+	#sb-mbjoin .scrollArea{padding: 10px;height: 100px;font-size: 12px;}
+	#sb-mbjoin .chkArea{font-size: 12px;}
+
+	#sb-mbjoin2 .step{display: none;}
+	#sb-mbjoin2 .inner{border-width: 4px;padding: 5px;}
+	#sb-mbjoin2 fieldset{padding-bottom: 15px;margin-bottom: 15px;}
+	#sb-mbjoin2 .join_tbl colgroup{display: none;}
+	#sb-mbjoin2 .join_tbl tr > *{padding: 5px;}
+	#sb-mbjoin2 .join_tbl tbody th{font-size: 12px;line-height: 15px;width: 70px;letter-spacing: -1px;}
+	#sb-mbjoin2 .join_tbl tbody td{font-size: 12px;line-height: 16px;}
+	#sb-mbjoin2 .join_tbl .inp{width: 100%;padding: 0 5px;margin: 2px 0; }
+	#sb-mbjoin2 .join_tbl .w150{width: 100%;}
+	#sb-mbjoin2 .join_tbl .w33{width: 28%;}
+	#sb-mbjoin2 .join_tbl .sb-btn.type3{width: 100%;height: 35px;line-height: 35px;font-size: 12px;}
+	#sb-mbjoin2 .join_tbl select{width: 100%;padding: 0 0 0 5px;margin: 2px 0;}
+	#sb-mbjoin2 .join_tbl textarea{padding: 5px;font-size: 12px;line-height: 16px;}
+	#sb-mbjoin2 .join_tbl #idchk_validt{font-size: 12px;}
+
+	#sb-mbjoinSuccess .step{display: none;}
+	#sb-mbjoinSuccess .inner{border: 4px solid #f5f5f5;padding: 20px 10px;}
+	#sb-mbjoinSuccess dl dt{background-size: auto 50px;height: 50px;}
+	#sb-mbjoinSuccess dl dd h5{font-size: 18px;line-height: 22px;margin-bottom: 10px;}
+	#sb-mbjoinSuccess dl dd p{font-size: 12px;line-height: 18px;}
+
+	#sb-mblogin{border-width: 5px;padding: 0;}
+	#sb-mblogin:before{display: none;}
+	#sb-mblogin > fieldset{float: none;width: 100%;padding: 15px 0;}
+	#sb-mblogin > fieldset .inner{width: 90%;height: auto;height: auto;}
+	#sb-mblogin > fieldset.login .inner{background: none;}
+	#sb-mblogin > fieldset.join .inner{background: none;}
+	#sb-mblogin h4{font-size: 16px;line-height: 16px;margin-bottom: 5px;}
+	#sb-mblogin legend{font-size: 12px;line-height: 15px;}
+	#sb-mblogin .inp{width: 100%;height: 35px;line-height: 35px;font-size: 12px;margin-bottom: 5px;}
+	#sb-mblogin .chkWrap label{font-size: 12px;letter-spacing: -1px;}
+	#sb-mblogin .chkWrap .findBtn{font-size: 12px;letter-spacing: -1px;}
+	#sb-mblogin .btnWrap{position: static;margin-top: 10px;}
+	#sb-mblogin .btnWrap .btn{width: 100%;height: 35px;line-height: 35px;font-size: 14px;}
+
+	#sb-snslogin{padding: 15px;}
+	#sb-snslogin .tit{margin-bottom: 10px;}
+	#sb-snslogin .tit h4{font-size: 14px;}
+	#sb-snslogin .tit em{font-size: 12px;line-height: 15px;}
+	#sb-snslogin fieldset input{width: 30px;height: 30px;}
+
+	#sb-findid .inner{border: 4px solid #f5f5f5;padding: 20px 10px;}
+	#sb-findid dl dt{background-size: auto 50px;height: 50px;}
+	#sb-findid dl dd h5{font-size: 18px;line-height: 22px;margin-bottom: 10px;}
+	#sb-findid dl dd p{font-size: 12px;line-height: 18px;}
+	#sb-findid dl dd .inpWrap{;width: 90%;}
+}

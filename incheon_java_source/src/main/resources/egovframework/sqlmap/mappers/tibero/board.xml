@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="board">
+
+  <resultMap type="java.util.Map" id="boardMap">
+     <result property="CONTENT" column="CONTENT" javaType="String" jdbcType="CLOB"/>
+  </resultMap>
+
+  <!-- 관리자 게시판 리스트 -->
+  <select id="boardNoticeList" parameterType="java.util.Map"   resultMap="boardMap">
+     SELECT A.*,
+            REGEXP_SUBSTR(file_split, '[^,]+', 1, 1 ) AS file_realnm,
+            REGEXP_SUBSTR(file_split, '[^,]+', 1, 2 ) AS file_no,
+            REGEXP_SUBSTR(file_split,'[^,]+',1,3) AS file_ext
+     FROM (
+		  	  SELECT A.*,
+		               (  select /*+index(B TB_FILE_REAL_TABLE)*/ file_realnm || ',' || to_char(file_no) || ',' || file_ext
+		                         from TB_FILE B
+		                         where B.REL_TBL='TB_BOARD' and B.REL_KEY = A.BRD_NO
+		                         and  rownum <![CDATA[ <= ]]> 1
+		               ) as file_split
+		              <if test="cate_cd   != null">
+		               ,
+		               ( select CD_NM
+		                  from  tb_code
+		                  where CD_TYPE = nvl(#{cate_cd}, '-')
+		                  and   COMM_CD = A.CATEGORY_CD
+		                  and  rownum <![CDATA[ <= ]]> 1
+		               ) as cate_nm
+		               </if>
+		   FROM (
+					  	SELECT A.*
+					  	FROM
+			  			(
+					          SELECT  /*+index(A BOARD_KEY_INDEX)*/ A.*
+						      FROM TB_BOARD A
+						      WHERE 1 = 1
+						      AND A.IS_COMMENT = 0
+							  AND A.NOTICE_YN = 'Y'
+							 <if test="brd_mgrno   != null"> AND A.BRD_MGRNO  = #{brd_mgrno} </if>
+							 <if test="category != null and category != '' "> AND A.CATEGORY_CD = #{category}</if>
+						     <if test="sort_ord   != null"> ORDER BY ${sort_ord} </if>
+						) A
+			    ) A
+		) A
+  </select>
+
+  <!-- 관리자 게시판 리스트 -->
+  <select id="boardList" parameterType="java.util.Map"   resultMap="boardMap">
+     SELECT A.*,
+            REGEXP_SUBSTR(file_split, '[^,]+', 1, 1 ) AS file_realnm,
+            REGEXP_SUBSTR(file_split, '[^,]+', 1, 2 ) AS file_no,
+            REGEXP_SUBSTR(file_split,'[^,]+',1,3) AS file_ext
+     FROM (
+		  	  SELECT A.*,
+		               (  select /*+index(B TB_FILE_REAL_TABLE)*/ file_realnm || ',' || to_char(file_no) || ',' || file_ext
+		                         from TB_FILE B
+		                         where B.REL_TBL='TB_BOARD' and B.REL_KEY = A.BRD_NO
+		                         and  rownum <![CDATA[ <= ]]> 1
+		               ) as file_split
+		              <if test="cate_cd   != null">
+		               ,
+		               ( select CD_NM
+		                  from  tb_code
+		                  where CD_TYPE = nvl(#{cate_cd}, '-')
+		                  and   COMM_CD = A.CATEGORY_CD
+		                  and  rownum <![CDATA[ <= ]]> 1
+		               ) as cate_nm
+		               </if>
+		   FROM (
+					  	SELECT A.*
+					  	FROM (
+						  	  	  SELECT A.*, rownum as pagingrow
+						  	  	  FROM (
+									          SELECT  /*+index(A BOARD_KEY_INDEX)*/ A.*
+										      FROM TB_BOARD A
+										      WHERE 1 = 1
+										      AND A.IS_COMMENT = 0
+											 <include refid="listSearch"></include>
+										     <if test="notice_yn != null">  AND A.NOTICE_YN = #{notice_yn}</if>
+										     <if test="category != null and category != '' "> AND A.CATEGORY_CD = #{category}</if>
+										     <if test="name != null and name != '' ">
+										         	 AND A.REG_NAME = #{name}
+										     </if>
+										     <if test="tel != null and tel != '' ">
+										         	 AND A.ETC_FIELD1 = #{tel}
+										     </if>
+										     <if test="brd_mgrno   != null"> AND A.BRD_MGRNO  = #{brd_mgrno} </if>
+										     <if test="sort_ord   != null"> ORDER BY ${sort_ord} </if>
+										) A
+								 <if test="page_end   != null">
+								  	where rownum <![CDATA[ <= ]]> #{page_end}
+								 </if>
+						) A
+						<if test="page_start   != null">
+					       where 	pagingrow <![CDATA[ >=  ]]> #{page_start}
+						</if>
+			    ) A
+		) A
+  </select>
+
+  <!-- 관리자 게시판 리스트 카운터 -->
+  <select id="boardListCount" parameterType="java.util.Map"   resultType="int">
+	      SELECT /*+index(A BOARD_KEY_INDEX)*/ count(*)
+		      FROM TB_BOARD A
+		      WHERE 1 = 1
+		      AND A.IS_COMMENT = 0
+		     <include refid="listSearch"></include>
+		     <if test="notice_yn != null">  AND A.NOTICE_YN = #{notice_yn}</if>
+		     <if test="category != null and category != '' "> AND A.CATEGORY_CD = #{category}</if>
+		     <if test="name != null and name != '' ">
+		         	 AND A.REG_NAME = #{name}
+		     </if>
+		     <if test="tel != null and tel != '' ">
+		         	 AND A.ETC_FIELD1 = #{tel}
+		     </if>
+		     <if test="brd_mgrno   != null"> AND A.BRD_MGRNO  = #{brd_mgrno} </if>
+
+  </select>
+
+  <!-- 리스트 검색조건 -->
+  <sql id="listSearch">
+		<if test="keyword !=null and keyword != '' ">
+			 <if test="keykind == 'title'">  AND A.TITLE  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == 'content'">  AND A.CONTENT  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == 'reg_name'">  AND A.REG_NAME  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == 'reg_id'">  AND A.REG_ID  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == ''">  AND (A.TITLE  like '%' || #{keyword} || '%' OR A.CONTENT  like '%' || #{keyword} || '%' OR A.REG_NAME  like '%' || #{keyword} || '%' OR A.REG_ID  like '%' || #{keyword} || '%')</if>
+		</if>
+		<if test="txt_sdate != null and txt_sdate != '' and txt_edate != null and txt_edate != ''">
+			AND SUBSTR(A.REG_DT,1,8) BETWEEN REPLACE(#{txt_sdate}, '-','') AND REPLACE(#{txt_edate}, '-','')
+		</if>
+  </sql>
+
+  <!-- 게시판 시퀀스 추출 -->
+  <select id="boardNextValue" parameterType="java.util.Map" resultType="int">
+	      SELECT SEQ_TB_BOARD_BRD_NO.nextval
+	      FROM dual
+  </select>
+
+  <!-- 게시판 Board_num 추출 -->
+  <select id="boardNum" parameterType="java.util.Map" resultType="int">
+	  	SELECT NVL(MIN(BOARD_NUM),0) -1 AS BOARD_NUM FROM
+	  	TB_BOARD WHERE BRD_MGRNO = #{brd_mgrno, jdbcType=INTEGER}
+  </select>
+
+  <!-- 게시판 상세내용 -->
+  <select id="boardDetail"  parameterType="java.util.Map" resultMap="boardMap">
+      SELECT  A.*
+	      FROM TB_BOARD A
+	      WHERE BRD_NO = #{brd_no, jdbcType=INTEGER}
+	      AND BRD_MGRNO = #{brd_mgrno, jdbcType=INTEGER}
+  </select>
+
+  <!-- 게시판 코멘트 리스트 -->
+  <select id="boardCommentList"  parameterType="java.util.Map" resultMap="boardMap">
+	SELECT A.* FROM TB_BOARD A WHERE A.BOARD_PARENT = #{brd_no, jdbcType=INTEGER}
+		AND A.IS_COMMENT = 1
+		ORDER BY A.COMMENT_CNT, A.COMMENT_REPLY
+  </select>
+
+  <!-- 게시판 코멘트 카운터 가져오기 -->
+  <select id="boardCommentMax" parameterType="java.util.Map" resultType="int">
+	SELECT NVL(MAX(COMMENT_CNT),0) AS MAX_COMMENT
+		FROM TB_BOARD
+		WHERE BOARD_PARENT = #{brd_no, jdbcType=INTEGER}
+		AND IS_COMMENT = 1
+  </select>
+
+  <!-- 게시판 코멘트 내용 가져오기 -->
+  <select id="boardCommentDetail" parameterType="java.util.Map" resultType="java.util.Map">
+	SELECT BRD_NO, REG_ID, REG_PWD, COMMENT_CNT, BOARD_PARENT, COMMENT_REPLY
+		FROM TB_BOARD
+		WHERE BRD_NO = #{comment_id, jdbcType=INTEGER}
+  </select>
+
+  <!-- 게시판 코멘트 체크 카운터 -->
+  <select id="boardCommentCheck" parameterType="java.util.Map" resultType="int">
+  <![CDATA[
+	SELECT COUNT(*) AS CNT FROM TB_BOARD
+	    WHERE COMMENT_REPLY LIKE #{comment_reply, jdbcType=VARCHAR} || '%'
+	    AND BRD_NO <>  #{comment_id, jdbcType=INTEGER}
+	    AND BOARD_PARENT = #{brd_no, jdbcType=INTEGER}
+	    AND COMMENT_CNT = #{comment_cnt, jdbcType=INTEGER}
+	    AND IS_COMMENT = 1
+  ]]>
+  </select>
+
+  <!-- 게시판 댓글 카운터 UPDATE -->
+  <update id="boardCommentCntUpdate" parameterType="java.util.Map">
+	  	UPDATE TB_BOARD SET
+			COMMENT_CNT		=  ${comment_cnt_value},
+			MD_DT					= to_char(sysdate, 'yyyymmddhh24miss')
+			WHERE BRD_NO 		= #{brd_no,					jdbcType=INTEGER}
+  </update>
+
+    <!-- 게시판 INSERT -->
+  <insert id="boardInsert" parameterType="java.util.Map">
+	  	INSERT INTO TB_BOARD
+	  	(
+			BRD_NO,
+			BRD_MGRNO,
+			CATEGORY_CD,
+			NOTICE_YN,
+			SECRET_YN,
+			TITLE,
+			CONTENT,
+			EMAIL,
+			REG_NAME,
+			REG_ID,
+			REG_ID_SEQ,
+			REG_PWD,
+			URL_TEXT,
+			USER_DI,
+			BOARD_SORT,
+			BOARD_NUM,
+			BOARD_REPLY,
+			BOARD_PARENT,
+			IS_COMMENT,
+			COMMENT_REPLY,
+			COMMENT_CNT,
+			ORI_REG_ID,
+			ETC_FIELD1,
+			ETC_FIELD2,
+			ETC_FIELD3,
+			ETC_FIELD4,
+			ETC_FIELD5,
+			YOUTUBE_CODE1,
+			YOUTUBE_CODE2,
+			YOUTUBE_CODE3,
+			REG_IP,
+			VIEW_CNT,
+			MD_DT,
+			REG_DT
+	  	)
+	  		VALUES
+	  	(
+			#{brd_no,					jdbcType=INTEGER},
+			#{brd_mgrno,				jdbcType=INTEGER},
+			#{category_cd,			jdbcType=VARCHAR},
+			#{notice_yn,				jdbcType=CHAR},
+			#{secret_yn,				jdbcType=CHAR},
+			#{title,						jdbcType=VARCHAR},
+			#{content,					jdbcType=CLOB},
+			#{email,						jdbcType=VARCHAR},
+			#{reg_name,				jdbcType=VARCHAR},
+			#{reg_id,					jdbcType=VARCHAR},
+			#{reg_id_seq,				jdbcType=INTEGER},
+			#{reg_pwd,					jdbcType=VARCHAR},
+			#{url_text,					jdbcType=VARCHAR},
+			#{user_di,					jdbcType=VARCHAR},
+			#{board_sort,				jdbcType=INTEGER},
+			#{board_num,				jdbcType=INTEGER},
+			#{board_reply,			jdbcType=VARCHAR},
+			#{board_parent,			jdbcType=INTEGER},
+			#{is_comment,			jdbcType=INTEGER},
+			#{comment_reply,		jdbcType=VARCHAR},
+			#{comment_cnt,			jdbcType=INTEGER},
+			#{ori_reg_id,				jdbcType=VARCHAR},
+			#{etc_field1,				jdbcType=VARCHAR},
+			#{etc_field2,				jdbcType=VARCHAR},
+			#{etc_field3,				jdbcType=VARCHAR},
+			#{etc_field4,				jdbcType=VARCHAR},
+			#{etc_field5,				jdbcType=VARCHAR},
+			#{youtube_code1,		jdbcType=VARCHAR},
+			#{youtube_code2,		jdbcType=VARCHAR},
+			#{youtube_code3,		jdbcType=VARCHAR},
+			#{reg_ip,					jdbcType=VARCHAR},
+			#{view_cnt,				jdbcType=INTEGER},
+			to_char(sysdate, 'yyyymmddhh24miss'),
+			<if test="reg_dt != null">
+				#{reg_dt,					jdbcType=VARCHAR}
+			</if>
+			<if test="reg_dt == null">
+				to_char(sysdate, 'yyyymmddhh24miss')
+			</if>
+	  	)
+  </insert>
+
+  <!-- 게시판 UPDATE -->
+  <update id="boardUpdate" parameterType="java.util.Map">
+	  	UPDATE TB_BOARD SET
+			CATEGORY_CD		= #{category_cd,			jdbcType=VARCHAR},
+			NOTICE_YN			= #{notice_yn,				jdbcType=CHAR},
+			SECRET_YN			= #{secret_yn,				jdbcType=CHAR},
+			TITLE					= #{title,						jdbcType=VARCHAR},
+			CONTENT			= #{content,					jdbcType=CLOB},
+			EMAIL				= #{email,						jdbcType=VARCHAR},
+			<if test="reg_name != null">
+			REG_NAME			= #{reg_name,				jdbcType=VARCHAR},
+			</if>
+			<if test="reg_pwd != null and reg_pwd != ''">
+			REG_PWD			   = #{reg_pwd,					jdbcType=VARCHAR},
+			</if>
+			URL_TEXT			= #{url_text,					jdbcType=VARCHAR},
+			BOARD_SORT		= #{board_sort,				jdbcType=INTEGER},
+			ETC_FIELD1	 		= #{etc_field1,				jdbcType=VARCHAR},
+			ETC_FIELD2 		= #{etc_field2,				jdbcType=VARCHAR},
+			ETC_FIELD3 		= #{etc_field3,				jdbcType=VARCHAR},
+			ETC_FIELD4 		= #{etc_field4,				jdbcType=VARCHAR},
+			ETC_FIELD5 		= #{etc_field5,				jdbcType=VARCHAR},
+			YOUTUBE_CODE1	= #{youtube_code1,			jdbcType=VARCHAR},
+			YOUTUBE_CODE2	= #{youtube_code2,			jdbcType=VARCHAR},
+			YOUTUBE_CODE3	= #{youtube_code3,			jdbcType=VARCHAR},
+			<if test="reg_dt != null">
+			REG_DT				= #{reg_dt,					jdbcType=VARCHAR},
+			</if>
+			MD_DT				=  to_char(sysdate, 'yyyymmddhh24miss')
+			WHERE BRD_NO 	= 	#{brd_no,					jdbcType=INTEGER}
+  </update>
+
+   <!-- 게시판 UPDATE -->
+  <update id="boardSortUpdate" parameterType="java.util.Map">
+	  	UPDATE TB_BOARD SET
+			BOARD_SORT		= #{board_sort,				jdbcType=INTEGER},
+			MD_DT				=  to_char(sysdate, 'yyyymmddhh24miss')
+			WHERE BRD_NO 	= 	#{brd_no,					jdbcType=INTEGER}
+  </update>
+
+  <!-- 게시판 삭제 -->
+  <delete id="boardDelete" parameterType="java.util.Map">
+  		DELETE TB_BOARD WHERE BRD_NO = #{brd_no, 			jdbcType=INTEGER}
+  </delete>
+
+  <!-- 댓글 삭제 -->
+  <delete id="boardCommentDelete" parameterType="java.util.Map">
+  	DELETE TB_BOARD
+	  	WHERE BOARD_PARENT = #{brd_no, 			jdbcType=INTEGER}
+	  	AND IS_COMMENT = 1
+  </delete>
+
+  <!-- 게시판 답글 순번 정하기 -->
+  <select id="boardReplyGet" parameterType="java.util.Map" resultType="java.util.Map">
+	SELECT MAX(SUBSTR(BOARD_REPLY, ${replyLen}, 1)) AS REPLY
+		FROM TB_BOARD
+		WHERE BOARD_NUM = #{board_num,					jdbcType=INTEGER}
+		AND SUBSTR(BOARD_REPLY, ${replyLen}, 1) <![CDATA[ <> ]]> ' '
+		<if test="boardreply != null and boardreply != '' ">  AND BOARD_REPLY LIKE #{boardreply} || '%' </if>
+  </select>
+
+  <!-- 코멘트 답글 순번 정하기 -->
+  <select id="boardCommentReplyGet" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT MAX(SUBSTR(COMMENT_REPLY, ${replyLen}, 1)) AS REPLY
+			FROM TB_BOARD
+			WHERE BOARD_PARENT = #{board_parent,					jdbcType=INTEGER}
+			AND COMMENT_CNT = #{tmp_comment,					jdbcType=INTEGER}
+			AND SUBSTR(COMMENT_REPLY, ${replyLen}, 1) <![CDATA[ <> ]]> ' '
+			<if test="comment_reply != null and comment_reply != '' ">  AND COMMENT_REPLY LIKE #{comment_reply} || '%' </if>
+  </select>
+
+  <!-- 메인메뉴 게시판 설정 -->
+  <select id="adminMainBoardmgr" parameterType="java.util.Map" resultType="java.util.Map">
+  <![CDATA[
+		SELECT A.MENU_NO, A.MENU_NM, A.MENU_URL, A.BRD_MGRNO, B.ORDER_CD
+			FROM TB_MENU A
+		    INNER JOIN TB_BOARDMGR B
+		    ON A.BRD_MGRNO = B.BRD_MGRNO
+		    WHERE A.MAIN_ADM_YN = 'Y'
+			AND A.MENU_GB = 'ADMIN'
+			AND A.USE_YN = 'Y'
+			AND A.BRD_MGRNO > 0
+  ]]>
+  </select>
+
+  <!-- 메인메뉴 게시판 리스트 -->
+  <select id="adminMainBoardList" parameterType="java.util.Map" resultMap="boardMap">
+  <![CDATA[
+		SELECT A.*, rownum as pagingrow
+		FROM (
+		          SELECT  /*+index(A BOARD_KEY_INDEX)*/ A.*
+		          FROM TB_BOARD A
+		          WHERE 1 = 1
+		          AND A.IS_COMMENT = 0
+		          AND A.BRD_MGRNO  = #{brd_mgrno}
+		          ORDER BY ${order_cd}
+		    ) A
+		where rownum  <= #{toppage}
+	]]>
+  </select>
+
+  <!-- 이전글 구하기 -->
+  <select id="prevnextBoardDetail" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT A.*, rownum as pagingrow
+		FROM (
+				SELECT A.BRD_NO, A.TITLE FROM TB_BOARD A
+				WHERE A.BRD_MGRNO = #{brd_mgrno}
+				AND A.IS_COMMENT = 0
+				AND SECRET_YN = 'N'
+				 ${where}
+				<include refid="listSearch"></include>
+				ORDER BY ${orderby}
+		) A
+		WHERE rownum  <![CDATA[<=]]> 1
+  </select>
+
+   <!-- 게시판 조회수 UPDATE -->
+  <update id="boardHitUpdate" parameterType="java.util.Map">
+	  	UPDATE TB_BOARD SET
+			VIEW_CNT		= VIEW_CNT + 1
+			WHERE BRD_NO 	= 	#{brd_no,					jdbcType=INTEGER}
+  </update>
+
+  <!-- 게시판 본인작성글 확인 -->
+   <select id="userCheckBoard" parameterType="java.util.Map" resultType="int">
+   		SELECT COUNT(*)
+   			FROM TB_BOARD
+   			WHERE REG_ID = #{user_id,				jdbcType=VARCHAR}
+   			AND BRD_NO = #{brd_no,				jdbcType=INTEGER}
+   </select>
+
+  <!-- 게시판 원글작성자 작성글 확인 -->
+   <select id="userOriCheckBoard" parameterType="java.util.Map" resultType="int">
+   		SELECT COUNT(*)
+   			FROM TB_BOARD
+   			WHERE ORI_REG_ID = #{user_id,				jdbcType=VARCHAR}
+   			AND BRD_NO = #{brd_no,				jdbcType=INTEGER}
+   </select>
+
+   <!-- 게시판 비밀번호 확인 -->
+   <select id="guestCheckBoard" parameterType="java.util.Map" resultType="int">
+   		SELECT COUNT(*)
+   			FROM TB_BOARD
+   			WHERE REG_PWD = #{req_pwd,				jdbcType=VARCHAR}
+			 <if test="name != null and name != '' ">
+		         	 AND REG_NAME = #{name}
+		     </if>
+		     <if test="tel != null and tel != '' ">
+		         	 AND ETC_FIELD1 = #{tel}
+		     </if>
+   			AND BRD_NO = #{brd_no,				jdbcType=INTEGER}
+   </select>
+
+  <!-- 게시판 상태값 UPDATE -->
+  <update id="boardStateUpdate" parameterType="java.util.Map">
+	  	UPDATE TB_BOARD SET
+			ETC_FIELD2 		= 	#{etc_field2,				jdbcType=VARCHAR}
+			WHERE BRD_NO 	= 	#{brd_no,					jdbcType=INTEGER}
+  </update>
+</mapper>

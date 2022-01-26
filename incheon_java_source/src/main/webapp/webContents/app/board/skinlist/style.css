@@ -1,0 +1,43 @@
+@charset "utf-8";
+/**************************************************
+
+	SUPERBOARD :: BOARD SKIN :: default
+
+**************************************************/
+#sb-list{}
+#sb-list .list_tbl{width: 100%;border-top: 1px solid #2e2e2e;}
+#sb-list .list_tbl tr > *{position: relative;padding: 15px 10px;border: 1px solid #dddddd;border-width: 0 1px 1px 1px;font-size: 14px;line-height: 18px;text-align: center;}
+#sb-list .list_tbl tr.tr_notice{background: #f3f4f7;}
+#sb-list .list_tbl thead tr th{font-weight: normal;color: #000000;}
+#sb-list .list_tbl tbody tr td.sbj{text-align: left;}
+/*#sb-list .list_tbl tbody tr.tr_notice td.sbj a{background: url(/webContents/app/images/sb_ico_notice.png) no-repeat 0 center;padding-left: 25px;} */
+#sb-list .list_tbl tbody tr td em{display: none;}
+
+/* 답글 들여쓰기 */
+#sb-list .list_tbl tbody tr td.sbj.reply1{background: url(/webContents/app/images/sb_ico_reply.png) no-repeat 20px 15px;padding-left: 40px;}
+#sb-list .list_tbl tbody tr td.sbj.reply2{background: url(/webContents/app/images/sb_ico_reply.png) no-repeat 50px 15px;padding-left: 70px;}
+#sb-list .list_tbl tbody tr td.sbj.reply3{background: url(/webContents/app/images/sb_ico_reply.png) no-repeat 80px 15px;padding-left: 100px;}
+#sb-list .list_tbl tbody tr td.sbj.reply4{background: url(/webContents/app/images/sb_ico_reply.png) no-repeat 110px 15px;padding-left: 130px;}
+#sb-list .list_tbl tbody tr td.sbj.reply5{background: url(/webContents/app/images/sb_ico_reply.png) no-repeat 140px 15px;padding-left: 160px;}
+
+@media screen and (max-width: 750px) {
+	#sb-list .list_tbl tr{display: block;padding: 10px 5px 12px 5px;border-top: 1px solid #dddddd;}
+	#sb-list .list_tbl tr > *{display: inline-block;*display: inline;*zoom: 1;border: none;box-sizing: border-box;color: #333333;font-size: 11px;padding: 0 5px;}
+	#sb-list .list_tbl tr > *:after{content: '';display: block;width: 1px;height: 12px;background: #dddddd;position: absolute;top: 50%;right: -3px;margin-top: -6px;}
+	#sb-list .list_tbl tr > *:last-child:after{display: none;}
+	#sb-list .list_tbl thead{display: none;}
+	#sb-list .list_tbl tbody tr td.no{display: none;}
+	#sb-list .list_tbl tbody tr td.sbj{width: 100%;margin-bottom: 5px;padding-bottom: 0;font-size: 14px;}
+	#sb-list .list_tbl tbody tr td.sbj a{color: #000000;}
+	#sb-list .list_tbl tbody tr td.sbj:after{display: none;}
+	#sb-list .list_tbl tbody tr td.sbj img{width: auto;height: auto;max-width: 14px;max-height: 14px;}
+	#sb-list .list_tbl tbody tr.tr_notice td.sbj a{background-size: 14px auto;padding-left: 20px;}
+	#sb-list .list_tbl tbody tr td em{display: inline-block;*display: inline;*zoom: 1;vertical-align: top;font-size: 11px;font-style: normal;color: #999;margin-right: 3px;}
+
+	/* 답글 들여쓰기 */
+	#sb-list .list_tbl tbody tr td.sbj.reply1{background-size: 10px auto;background-position: 7px 2px;padding-left: 22px;}
+	#sb-list .list_tbl tbody tr td.sbj.reply2{background-size: 10px auto;background-position: 17px 2px;padding-left: 32px;}
+	#sb-list .list_tbl tbody tr td.sbj.reply3{background-size: 10px auto;background-position: 27px 2px;padding-left: 42px;}
+	#sb-list .list_tbl tbody tr td.sbj.reply4{background-size: 10px auto;background-position: 37px 2px;padding-left: 52px;}
+	#sb-list .list_tbl tbody tr td.sbj.reply5{background-size: 10px auto;background-position: 47px 2px;padding-left: 62px;}
+}

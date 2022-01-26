@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="banner">
+	 
+	 <!-- 배너 리스트 -->
+     <select id="bannerList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+         SELECT A.*, B.*
+         ,(SELECT CD_NM FROM TB_CODE WHERE CD_TYPE = 'BANNER_TYPE_CD' AND COMM_CD = A.TYPE_CD) as CD_NM1
+         ,(SELECT CD_NM FROM TB_CODE WHERE CD_TYPE = 'BANNER_TYPE2_CD' AND COMM_CD = A.TYPE2_CD) as CD_NM2
+	     FROM TB_BANNER A 
+         LEFT JOIN TB_FILE B
+         ON A.SEQ = B.REL_KEY
+         AND B.REL_TBL = 'TB_BANNER' 
+         AND B.FILE_GBN = 'FILE1'
+	     WHERE 1 = 1
+		<include refid="listSearch"></include>
+		ORDER BY A.SEQ DESC       
+     </select>
+  
+   <!-- 배너 리스트 카운터 -->
+   <select id="bannerListCount" parameterType="java.util.Map"   resultType="int">      
+         SELECT count(*)
+ 	     FROM TB_BANNER A
+	     WHERE 1 = 1
+		<include refid="listSearch"></include> 
+     </select>
+
+  <!-- 리스트 검색조건 -->
+  <sql id="listSearch">
+		<if test="keyword !=null and keyword != '' ">
+			 <if test="keykind == 'title'">  AND A.TITLE  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == ''">  AND (A.TITLE  like '%' || #{keyword} || '%') </if>
+		</if>	
+		<if test="txt_sdate != null and txt_sdate != '' and txt_edate != null and txt_edate != ''">
+			AND SUBSTR(A.REG_DT,1,8) BETWEEN REPLACE(#{txt_sdate}, '-','') AND REPLACE(#{txt_edate}, '-','')
+		</if>
+  </sql>
+ 
+   <!-- 배너 상세내용 -->
+  <select id="bannerDetail"  parameterType="java.util.Map"  resultType="java.util.Map">  	  	 
+	      SELECT * 
+	      FROM TB_BANNER
+	      WHERE SEQ = #{seq, jdbcType=INTEGER}       
+  </select>  
+  
+  <!-- 배너 INSERT -->
+  <insert id="bannerInsert" parameterType="java.util.Map">
+  		INSERT INTO TB_BANNER 
+  		(
+			SEQ,
+			TITLE,
+			USE_YN,
+			TYPE_CD,
+			TYPE2_CD,
+			LINK_TEXT,
+			LINK_TARGET,
+			MOVIE_LINK,
+			ORD,
+			MENU_GB,
+			MD_DT,
+			REG_DT
+  		)
+  		VALUES 
+  		(
+  			#{seq,							jdbcType=INTEGER},
+			#{title,							jdbcType=VARCHAR},
+			#{use_yn,						jdbcType=CHAR},
+			#{type_cd,						jdbcType=VARCHAR},
+			#{type2_cd,					jdbcType=VARCHAR},
+			#{link_text,						jdbcType=VARCHAR},
+			#{link_target,					jdbcType=VARCHAR},
+			#{movie_link,					jdbcType=VARCHAR},
+			#{ord,							jdbcType=INTEGER},
+			#{menu_gb,					jdbcType=VARCHAR},
+			to_char(sysdate, 'yyyymmddhh24miss'), 
+			to_char(sysdate, 'yyyymmddhh24miss') 	
+  		)
+  </insert>
+	
+  <!-- 배너 UPDATE -->
+  <update id="bannerUpdate" parameterType="java.util.Map">
+  		UPDATE TB_BANNER SET
+			TITLE							= #{title,							jdbcType=VARCHAR},
+			USE_YN						= #{use_yn,						jdbcType=CHAR},
+			TYPE_CD					= #{type_cd,						jdbcType=VARCHAR},
+			TYPE2_CD					= #{type2_cd,						jdbcType=VARCHAR},
+			LINK_TEXT					= #{link_text,						jdbcType=VARCHAR},
+			LINK_TARGET				= #{link_target,					jdbcType=VARCHAR},
+			MOVIE_LINK				= #{movie_link,					jdbcType=VARCHAR},
+			MENU_GB					= #{menu_gb,						jdbcType=VARCHAR},
+			ORD							= #{ord,								jdbcType=INTEGER},
+			MD_DT						= to_char(sysdate, 'yyyymmddhh24miss')
+		WHERE SEQ = #{seq, jdbcType=INTEGER}
+  </update>
+  
+  <!-- 배너 DELETE -->
+  <delete id="bannerDelete" parameterType="java.util.Map">
+  		DELETE FROM TB_BANNER
+  		WHERE SEQ = #{seq, jdbcType=INTEGER}
+  </delete>
+  
+  <!-- 배너 시퀀스 조회 -->
+    <select id="bannerNextValue" parameterType="java.util.Map"   resultType="int">
+	      SELECT SEQ_TB_BANNER_SEQ.nextval
+	      FROM DUAL
+  </select>   
+  
+  <!-- 배너 사용자 오픈 -->
+     <select id="bannerOpen"  parameterType="java.util.Map" resultType="java.util.HashMap">
+         SELECT A.*,
+		       (  SELECT file_realnm 
+		          FROM TB_FILE
+		          WHERE  REL_TBL  = 'TB_BANNER'
+		          AND    FILE_GBN = 'FILE1'
+		          AND    REL_KEY  = A.SEQ
+		       ) IMG_PC,
+		       (  SELECT file_realnm 
+		          FROM TB_FILE
+		          WHERE  REL_TBL  = 'TB_BANNER'
+		          AND    FILE_GBN = 'FILE2'
+		          AND    REL_KEY  = A.SEQ
+		       ) IMG_MOBILE      
+	     FROM TB_BANNER A 
+	     WHERE 1 = 1
+	     AND A.MENU_GB = #{menu_gb,				jdbcType=VARCHAR} 
+	     AND A.TYPE_CD = #{type_cd,				jdbcType=VARCHAR}
+	     AND A.TYPE2_CD = #{type2_cd,			jdbcType=VARCHAR}
+	     AND A.USE_YN = #{use_yn,			jdbcType=CHAR}
+		ORDER BY A.ORD ASC       
+     </select>
+
+</mapper>

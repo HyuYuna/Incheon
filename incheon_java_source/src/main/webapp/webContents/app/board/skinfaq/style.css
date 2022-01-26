@@ -1,0 +1,22 @@
+@charset "utf-8";
+/**************************************************
+
+	SUPERBOARD :: BOARD SKIN :: faq
+
+**************************************************/
+#sb-faq{}
+#sb-faq .faq_list{border-top: 1px solid #000000;}
+#sb-faq .faq_list li{border-bottom: 1px solid #ddd;}
+#sb-faq .faq_list li .ques{position: relative;padding: 20px 50px 20px 60px;background: url(/webContents/app/images/sb_ico_faq_q.png) no-repeat 20px center;}
+#sb-faq .faq_list li .ques:after{content: '';display: block;background: url(/webContents/app/images/sb_ico_faq_spr.png) no-repeat center center;background-size: contain;display: block;width: 15px;height: 100%;position: absolute;top: 0;right: 20px;}
+#sb-faq .faq_list li.active .ques:after{transform: rotate(-180deg);}
+#sb-faq .faq_list li .ques a.sbj{display: block;font-size: 14px;line-height:22px;color: #333333;}
+#sb-faq .faq_list li .ans{position: relative;padding: 20px 50px 20px 60px;background: #f3f4f7 url(/webContents/app/images/sb_ico_faq_a.png) no-repeat 20px center;border-top: 1px solid #ddd;display: none;}
+
+@media screen and (max-width: 750px) {
+	#sb-faq .faq_list li .ques{padding: 15px 30px 15px 35px;background-size: 20px auto;background-position: 5px center;}
+	#sb-faq .faq_list li .ques:after{width: 10px;height: 100%;right: 5px;}
+	#sb-faq .faq_list li .ques a.sbj{font-size: 12px;line-height:16px;}
+	#sb-faq .faq_list li .ans{padding: 15px 30px 15px 35px;background-size: 20px auto;background-position: 5px center;font-size: 12px;line-height: 16px;}
+
+}

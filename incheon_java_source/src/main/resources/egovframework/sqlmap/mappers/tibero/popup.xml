@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="popup">
+	 
+	<resultMap type="java.util.Map" id="popupMap">
+     <result property="CONTENT" column="CONTENT" javaType="String" jdbcType="CLOB"/>
+  </resultMap>
+  
+	 <!-- 팝업 리스트 -->
+     <select id="popupList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+         SELECT A.*
+         ,(SELECT CD_NM FROM TB_CODE WHERE CD_TYPE = 'POP_TYPE_CD' AND COMM_CD = A.TYPE_CD) as CD_NM
+	     FROM TB_POPUP A 
+	     WHERE 1 = 1
+		 <include refid="listSearch"></include>
+		ORDER BY A.SEQ DESC       
+     </select>
+  
+   <!-- 팝업 리스트 카운터 -->
+   <select id="popupListCount" parameterType="java.util.Map"   resultType="int">      
+         SELECT count(*)
+ 	     FROM TB_POPUP A
+	     WHERE 1 = 1
+		 <include refid="listSearch"></include>
+     </select>
+ 
+ 
+  <!-- 리스트 검색조건 -->
+  <sql id="listSearch">
+		<if test="keyword !=null and keyword != '' ">
+			 <if test="keykind == 'title'">  AND A.TITLE  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == 'content'">  AND A.CONTENT  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == ''">  AND (A.TITLE  like '%' || #{keyword} || '%' OR A.CONTENT  like '%' || #{keyword} || '%') </if>
+		</if>	
+		<if test="txt_sdate != null and txt_sdate != '' and txt_edate != null and txt_edate != ''">
+			AND SUBSTR(A.REG_DT,1,8) BETWEEN REPLACE(#{txt_sdate}, '-','') AND REPLACE(#{txt_edate}, '-','')
+		</if>
+  </sql>
+  
+   <!-- 팝업 상세내용 -->
+  <select id="popupDetail"  parameterType="java.util.Map"  resultMap="popupMap">  	  	 
+	      SELECT * 
+	      FROM TB_POPUP
+	      WHERE SEQ = #{seq, jdbcType=INTEGER}       
+  </select>  
+  
+  <!-- 팝업 INSERT -->
+  <insert id="popupInsert" parameterType="java.util.Map">
+  		INSERT INTO TB_POPUP 
+  		(
+			SEQ,
+			TITLE,
+			USE_YN,
+			SITE_TYPE,
+			TYPE_CD,
+			START_DATE,
+			END_DATE,
+			LEFT_SIZE,
+			TOP_SIZE,
+			WIDTH_SIZE,
+			HEIGHT_SIZE,
+			MENU_GB,
+			CONTENT,
+			MD_DT,
+			REG_DT
+  		)
+  		VALUES 
+  		(
+  			SEQ_TB_POPUP_SEQ.nextval,
+			#{title,							jdbcType=VARCHAR},
+			#{use_yn,						jdbcType=CHAR},
+			#{site_type,					jdbcType=VARCHAR},
+			#{type_cd,						jdbcType=VARCHAR},
+			#{start_date,					jdbcType=CHAR},
+			#{end_date,					jdbcType=CHAR},
+			#{left_size,						jdbcType=INTEGER},
+			#{top_size,						jdbcType=INTEGER},
+			#{width_size,					jdbcType=INTEGER},
+			#{height_size,					jdbcType=INTEGER},
+			#{menu_gb,					jdbcType=VARCHAR},
+			#{content,						jdbcType=CLOB},
+			to_char(sysdate, 'yyyymmddhh24miss'), 
+			to_char(sysdate, 'yyyymmddhh24miss') 	
+  		)
+  </insert>
+	
+  <!-- 팝업 UPDATE -->
+  <update id="popupUpdate" parameterType="java.util.Map">
+  		UPDATE TB_POPUP SET
+ 			TITLE					= #{title,							jdbcType=VARCHAR},
+			USE_YN				= #{use_yn,						jdbcType=CHAR},
+			SITE_TYPE			= #{site_type,					jdbcType=VARCHAR},
+			TYPE_CD			= #{type_cd,						jdbcType=VARCHAR},
+			START_DATE		= #{start_date,					jdbcType=CHAR},
+			END_DATE			= #{end_date,					jdbcType=CHAR},
+			LEFT_SIZE			= #{left_size,						jdbcType=INTEGER},
+			TOP_SIZE			= #{top_size,						jdbcType=INTEGER},
+			WIDTH_SIZE		= #{width_size,					jdbcType=INTEGER},
+			HEIGHT_SIZE		= #{height_size,					jdbcType=INTEGER},
+			MENU_GB			= #{menu_gb,						jdbcType=VARCHAR},
+			CONTENT			= #{content,						jdbcType=CLOB},
+			MD_DT				= to_char(sysdate, 'yyyymmddhh24miss')
+		WHERE SEQ = #{seq, jdbcType=INTEGER}
+  </update>
+  
+  <!-- 팝업 DELETE -->
+  <delete id="popupDelete" parameterType="java.util.Map">
+  		DELETE FROM TB_POPUP
+  		WHERE SEQ = #{seq, jdbcType=INTEGER}
+  </delete>
+
+	<!-- 팝업 노출 -->
+   <select id="popupOpen"  parameterType="java.util.Map" resultMap="popupMap">
+	<![CDATA[
+		SELECT * FROM TB_POPUP WHERE USE_YN = 'Y'
+		AND MENU_GB = #{menu_gb,				jdbcType=VARCHAR}
+		AND START_DATE <= #{search_ymd,					jdbcType=VARCHAR}
+		AND END_DATE >= #{search_ymd,					jdbcType=VARCHAR}
+		ORDER BY SEQ DESC
+	]]>
+   </select>
+     
+</mapper>

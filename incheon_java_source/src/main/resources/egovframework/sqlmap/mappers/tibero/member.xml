@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="member">
+
+  <!-- 회원 아이디 중복 체크 -->
+  <select id="userIdCheck" parameterType="java.util.Map"   resultType="int">      
+	 		SELECT 	COUNT (*)
+			FROM 	TB_USER
+			WHERE  USER_ID  = #{user_id}   	 
+ </select>
+
+  <!-- 회원 이메일 중복 체크 -->
+  <select id="userEmailCheck" parameterType="java.util.Map"   resultType="int">      
+	 		SELECT 	COUNT (*)
+			FROM 	TB_USER
+			WHERE  EMAIL  = #{email}
+			AND USER_ID != #{user_id}
+ </select>
+ 
+  <!-- 회원 정보 INSERT -->
+   <insert  id="userInsert" parameterType="java.util.Map"  >
+		INSERT INTO TB_USER
+		(
+			SEQ,
+			USER_ID,
+			PWD,
+			USER_NM,
+			USER_LEVEL,
+			USER_AUTH,
+			USER_TYPE,
+			USE_YN,
+			USER_NICK,
+			EMAIL,
+			MAILLING_YN,
+			SMS_YN,
+			TEL,
+			HP,
+			BIRTHDAY,
+			GENDER,
+			USER_DI,
+			ZIPCODE,
+			ADDR1,
+			ADDR2,
+			REG_IP,
+			MD_DT,
+			REG_DT
+		) VALUES (
+			SEQ_TB_USER_SEQ.nextval,
+            lower(#{user_id     		, jdbcType=VARCHAR}) ,
+            #{pwd         				, jdbcType=VARCHAR} ,
+            #{user_nm     				, jdbcType=VARCHAR} ,
+			#{user_level				, jdbcType=INTEGER},
+			#{user_auth				, jdbcType=VARCHAR} ,				
+			#{user_type				, jdbcType=VARCHAR},
+			#{use_yn					, jdbcType=CHAR},
+			#{user_nick				, jdbcType=VARCHAR},				
+			#{email						, jdbcType=VARCHAR},
+			#{mailling_yn				, jdbcType=CHAR},
+			#{sms_yn					, jdbcType=CHAR},
+			#{tel							, jdbcType=VARCHAR},
+			#{hp							, jdbcType=VARCHAR},
+			#{birthday					, jdbcType=VARCHAR},
+			#{gender					, jdbcType=CHAR},
+			#{user_di					, jdbcType=VARCHAR},
+			#{zipcode					, jdbcType=CHAR},
+			#{addr1						, jdbcType=VARCHAR},								
+			#{addr2						, jdbcType=VARCHAR},
+			#{reg_ip						, jdbcType=VARCHAR},
+			to_char(sysdate, 'yyyymmddhh24miss'),
+			to_char(sysdate, 'yyyymmddhh24miss')
+		)     
+  </insert>
+  
+  	<!-- 유저정보 UPDATE -->
+  	<update id="userUpdate" parameterType="java.util.Map">
+  		UPDATE TB_USER SET
+  			<if test="pwd != null and pwd != '' ">
+	        PWD =    				#{pwd         				, jdbcType=VARCHAR} ,
+	        </if>
+	        USER_NM =    			#{user_nm     				, jdbcType=VARCHAR} ,
+			USER_LEVEL =			#{user_level				, jdbcType=INTEGER},
+			USER_TYPE =			#{user_type				, jdbcType=VARCHAR},
+			USE_YN =				#{use_yn					, jdbcType=CHAR},
+			EMAIL =					#{email						, jdbcType=VARCHAR},
+			MAILLING_YN =		#{mailling_yn				, jdbcType=CHAR},
+			SMS_YN =				#{sms_yn					, jdbcType=CHAR},
+			TEL =						#{tel							, jdbcType=VARCHAR},
+			HP =						#{hp							, jdbcType=VARCHAR},
+			BIRTHDAY =				#{birthday					, jdbcType=VARCHAR},
+			GENDER =				#{gender					, jdbcType=CHAR},
+			ZIPCODE =				#{zipcode					, jdbcType=CHAR},
+			ADDR1 =					#{addr1						, jdbcType=VARCHAR},								
+			ADDR2 =					#{addr2						, jdbcType=VARCHAR},
+			MD_DT = 				to_char(sysdate, 'yyyymmddhh24miss')
+		WHERE USER_ID = 		#{user_id, jdbcType=VARCHAR}
+  	</update> 
+
+  	<!-- 유저정보 사용자페이지 UPDATE -->
+  	<update id="userFrontUpdate" parameterType="java.util.Map">
+  		UPDATE TB_USER SET
+  			<if test="pwd != null and pwd != '' ">
+	        PWD =    				#{pwd         				, jdbcType=VARCHAR} ,
+	        </if>
+	        USER_NM =    			#{user_nm     				, jdbcType=VARCHAR} ,
+			EMAIL =					#{email						, jdbcType=VARCHAR},
+			MAILLING_YN =		#{mailling_yn				, jdbcType=CHAR},
+			SMS_YN =				#{sms_yn					, jdbcType=CHAR},
+			TEL =						#{tel							, jdbcType=VARCHAR},
+			HP =						#{hp							, jdbcType=VARCHAR},
+			BIRTHDAY =				#{birthday					, jdbcType=VARCHAR},
+			GENDER =				#{gender					, jdbcType=CHAR},
+			ZIPCODE =				#{zipcode					, jdbcType=CHAR},
+			ADDR1 =					#{addr1						, jdbcType=VARCHAR},								
+			ADDR2 =					#{addr2						, jdbcType=VARCHAR},
+			MD_DT = 				to_char(sysdate, 'yyyymmddhh24miss')
+		WHERE USER_ID = 		#{user_id, jdbcType=VARCHAR}
+  	</update> 
+
+  	<!-- 유저 정보 SELECT -->
+   <select id="userDetail" parameterType="java.util.Map" resultType="java.util.Map">     	
+	 		SELECT * FROM TB_USER A
+			WHERE  A.user_id  = #{user_id}   	 
+ 	</select> 
+ 	
+	 <!-- 회원 로그인 확인 -->
+	 <select id="memberLoginCheck" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT * FROM TB_USER WHERE USER_ID = #{user_id, 			jdbcType=VARCHAR}
+		AND PWD = #{pwd,			jdbcType=VARCHAR}
+		AND USE_YN = 'Y'
+		AND USER_LEVEL > 1
+		AND (USER_TYPE = 'USER')
+	 </select> 
+
+	<!-- 회원 마지막로그인 업데이트  -->
+	<update id="memberloginDateUpdate" parameterType="java.util.Map">
+		UPDATE TB_USER
+		SET
+		LAST_LOGIN = to_char(sysdate, 'yyyymmddhh24miss')
+		WHERE user_id = #{user_id, 		jdbcType=VARCHAR}
+	</update> 
+	
+	<!-- 회원 탈퇴처리 -->
+	<update id="memberDelete" parameterType="java.util.Map">
+		UPDATE TB_USER
+		SET USE_YN = 'D'
+		WHERE user_id = #{user_id, 		jdbcType=VARCHAR}
+	</update>
+
+  	<!-- 유저 아이디 찾기 -->
+   <select id="userIdFind" parameterType="java.util.Map" resultType="java.util.Map">     	
+		SELECT * FROM TB_USER
+		WHERE USER_NM = #{user_nm, 		jdbcType=VARCHAR}
+		AND USER_LEVEL > 1
+		AND USE_YN = 'Y'
+		AND USER_AUTH = #{user_auth, 		jdbcType=VARCHAR}
+		AND EMAIL = #{email, 		jdbcType=VARCHAR}
+ 	</select> 
+
+  	<!-- 유저 비밀번호 찾기 -->
+   <select id="userPasswordFind" parameterType="java.util.Map" resultType="java.util.Map">     	
+		SELECT * FROM TB_USER
+		WHERE USER_ID = #{user_id, 		jdbcType=VARCHAR}
+		AND USER_LEVEL > 1
+		AND USE_YN = 'Y'
+		AND USER_AUTH = #{user_auth, 		jdbcType=VARCHAR}
+		AND EMAIL = #{email, 		jdbcType=VARCHAR}
+ 	</select>
+ 	
+   	<!-- 유저정보 비밀번호 UPDATE -->
+  	<update id="userPwdUpdate" parameterType="java.util.Map">
+  		UPDATE TB_USER SET
+	        PWD =    				#{pwd         				, jdbcType=VARCHAR} ,
+			MD_DT = 				to_char(sysdate, 'yyyymmddhh24miss')
+		WHERE USER_ID = 		#{user_id, jdbcType=VARCHAR}
+  	</update> 
+</mapper>

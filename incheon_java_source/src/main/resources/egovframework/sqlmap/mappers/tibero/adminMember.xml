@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="adminMember">
+
+  <resultMap type="java.util.Map" id="emailMap">
+     <result property="CONTENT" column="CONTENT" javaType="String" jdbcType="CLOB"/>
+  </resultMap>
+  
+	<!-- 관리자 페이지 로그인 처리 -->
+  	<select id="adminLogin" parameterType="java.util.Map"   resultType="java.util.Map">   
+	 	SELECT 	* FROM  TB_USER A
+			WHERE  A.USER_ID  	= #{user_id}   	 
+			AND    A.PWD      	= #{user_pw}
+			AND    A.USER_TYPE  IN 	('ADMIN','MANAGER')
+			AND    A.USE_YN   	= 'Y'
+ 	</select> 
+ 	
+ 	<!-- 관리자 로그인 방문날짜 업데이트 처리 -->
+   <update id="adminVisit" parameterType="java.util.Map" >
+		UPDATE TB_USER
+		SET LAST_LOGIN  = to_char(sysdate, 'yyyymmddhh24miss')                 
+        WHERE USER_ID = #{user_id}         
+  </update> 
+	
+	<!-- 관리 메뉴 정보 추출 -->
+     <select id="userFirstMenu" parameterType="java.util.Map"   resultType="java.util.Map"> 
+           SELECT *
+           FROM (      
+                   SELECT B.*, C.CD_NM AS MENU_GB_NM
+                    FROM   TB_MENU B, 
+                           (
+                               SELECT *
+                               FROM   TB_CODE A
+                               WHERE CD_TYPE ='MENU'                                 
+                           ) C
+                    WHERE  EXISTS (
+                                    SELECT 'X'
+                                    FROM   TB_USERMENU C
+                                    WHERE  USER_ID = #{USER_ID}
+                                    AND    B.MENU_NO = C.MENU_NO
+                                    UNION ALL
+                                    SELECT 'X'
+                                    FROM   DUAL
+                                    WHERE  'ADMIN' = #{USER_TYPE}
+                                 )
+                    AND  B.MENU_GB = C.COMM_CD    
+                    AND  B.MENU_GB = 'ADMIN'   
+                    
+                   <if test="FULL_MENU_LIKE   != null"> AND B.FULL_MENU_NO like  #{FULL_MENU_LIKE, jdbcType=VARCHAR }  || ',%' </if> 
+                     
+                    
+                    AND  B.MENU_LVL  <![CDATA[ >= ]]> 2      
+                    AND  B.USE_YN ='Y'
+                    AND  B.ORD <![CDATA[ >= ]]> 0     
+                    ORDER BY C.ORD, B.MENU_GB, B.ORD       
+                 )
+           WHERE ROWNUM <![CDATA[ <= ]]> 1
+    </select>
+
+	<!-- 회원 정보 불러오기 -->
+  	<select id="userSelBoxList" parameterType="java.util.Map"   resultType="java.util.Map">   
+             SELECT  user_id           ,
+					 user_nm           ,
+                     (  SELECT CD_NM
+                        FROM  TB_CODE C
+                        WHERE CD_TYPE ='USERGRD'
+                        AND   COMM_CD = A.USER_TYPE
+                     ) AS USER_TYPE_NM
+            FROM     TB_USER A 
+ 	 	    WHERE A.use_yn  = 'Y' 
+ 	 	    and     A.USER_TYPE != 'USER' 
+			ORDER BY user_nm			  	 
+ 	</select>
+ 	
+ 	
+ 	<!-- 회원 정보 리스트 -->
+   	<select id="userList" parameterType="java.util.Map"   resultType="java.util.Map">   
+             SELECT A.*,
+                     (  SELECT CD_NM
+                        FROM  TB_CODE C
+                        WHERE CD_TYPE ='USERGRD'
+                        AND   COMM_CD = A.USER_TYPE
+                     ) AS USER_TYPE_NM
+            FROM     TB_USER A 
+ 	 	    WHERE   1=1  
+			<include refid="listSearch"></include>
+			ORDER BY A.REG_DT DESC	  	 
+ 	</select>
+	
+	<!-- 회원정보 리스트 카운터 -->
+   	<select id="userListCount" parameterType="java.util.Map"   resultType="int">   
+	 		SELECT 	count(*)
+			FROM 	TB_USER A
+			WHERE   1=1  
+			<include refid="listSearch"></include>
+ 	</select>
+ 	
+	 <!-- 리스트 검색조건 -->
+	  <sql id="listSearch">
+	  		<if test="usertype != null and usertype !=''"> AND A.USER_TYPE  = #{usertype} </if>
+	  		
+			<if test="keyword !=null and keyword != '' ">
+				 <if test="keykind == 'user_id'">  AND A.USER_ID  like '%' || #{keyword} || '%' </if>
+				 <if test="keykind == 'user_nm'">  AND A.USER_NM  like '%' || #{keyword} || '%' </if>
+				 <if test="keykind == 'email'">  AND A.EMAIL  like '%' || #{keyword} || '%' </if>
+				 <if test="keykind == 'hp'">  AND A.HP  like '%' || #{keyword} || '%' </if>
+				 <if test="keykind == ''">  AND (A.USER_ID  like '%' || #{keyword} || '%' OR A.USER_NM  like '%' || #{keyword} || '%' OR A.EMAIL  like '%' || #{keyword} || '%' OR A.HP  like '%' || #{keyword} || '%') </if>
+			</if>	
+			<if test="txt_sdate != null and txt_sdate != '' and txt_edate != null and txt_edate != ''">
+				AND SUBSTR(A.REG_DT,1,8) BETWEEN REPLACE(#{txt_sdate}, '-','') AND REPLACE(#{txt_edate}, '-','')
+			</if>
+	  </sql>
+  
+	<!-- 회원 관리 메뉴 목록 -->
+    <select id="menuAuthList" parameterType="java.util.Map"   resultType="java.util.Map">  	
+          SELECT  A.* 	      
+	      FROM TB_USERMENU A
+          WHERE A.USER_ID = nvl(#{user_id}, '-')
+    </select>
+ 
+ 		<!--  전체 메뉴 리스르트 -->
+      <select id="menuList" parameterType="java.util.Map"   resultType="java.util.Map">  	
+          SELECT  A.*, B.cd_nm as MENU_GB_NM	      
+	      FROM TB_MENU A,   
+	           ( 
+	              SELECT *  
+                  FROM   TB_CODE  
+                  WHERE  CD_TYPE='MENU' 
+               ) B
+          WHERE A.MENU_GB = B.COMM_CD(+)
+          <if test="cont_user_id    != null">    
+              AND   MENU_NO in (
+                                   SELECT menu_no
+                                   FROM (
+                                       SELECT *
+                                       FROM   TB_MENU P
+                                       WHERE  use_yn = 'Y' 
+                                       AND   CONT_USER_ID = #{cont_user_id}
+                                   ) P              
+                                   CONNECT BY prior P.UP_MENU_NO =  P.MENU_NO        
+                               ) 
+          </if>               
+                         
+          <if test="menu_gb    != null"> AND A.menu_gb   = #{menu_gb} </if>
+          <if test="up_menu_no != null"> AND A.up_menu_no = #{up_menu_no} </if>
+	  
+	      <if test="sort_ord  != null"> ORDER BY ${sort_ord} </if>
+	      <if test="sort_ord  == null"> ORDER BY B.ORD, A.TOP_MENU_NO, A.ORD,  A.MENU_NO	 </if>
+		    
+   </select> 
+
+  <!-- 메뉴  데이타 삭제하기 -->
+  <delete id="userMenuDelete" parameterType="java.util.Map" >
+		DELETE FROM TB_USERMENU   
+		WHERE USER_ID = #{user_id}               
+  </delete> 
+  
+  <update id="userMenuUpdate" parameterType="java.util.Map" >  
+		INSERT INTO TB_USERMENU (user_id, menu_no, reg_dt) 
+          SELECT #{user_id}, A.menu_no, to_char(sysdate, 'yyyymmdd')
+          FROM (
+                  SELECT P.*
+                  FROM   TB_MENU P
+                  WHERE  use_yn = 'Y' 
+                  START WITH menu_no =  #{menu_no}                   
+                  CONNECT BY prior P.UP_MENU_NO =  P.MENU_NO   
+               ) A
+          WHERE NOT EXISTS ( SELECT 'X' 
+                             from TB_USERMENU B
+                             WHERE  A.MENU_NO = B.MENU_NO
+                             AND    B.user_id = #{user_id}
+                           )  		    
+  </update>
+  
+  <!-- 컨텐츠 관리자 리스트 메뉴 -->
+  <select id="menuContentList" parameterType="java.util.Map"   resultType="java.util.Map">
+  
+                     SELECT A.*, B.cd_nm as MENU_GB_NM     
+                     FROM ( 
+                               select distinct *
+                               from (       
+                                      SELECT  *
+                                      FROM   TB_MENU P
+                                      WHERE  use_yn = 'Y' 
+                                      AND   CONT_USER_ID = #{cont_user_id}
+                                      <if test="menu_gb    != null"> AND menu_gb   = #{menu_gb} </if>               
+                                      CONNECT BY prior P.UP_MENU_NO =  P.MENU_NO  
+                                      union all
+                                      select *
+                                      from  tb_menu
+                                      where menu_no in (
+                                                          SELECT  top_menu_no
+                                                          FROM   TB_MENU P
+                                                          WHERE  use_yn = 'Y' 
+                                                          AND   CONT_USER_ID = #{cont_user_id}
+                                                          <if test="menu_gb    != null"> AND menu_gb   = #{menu_gb} </if> 
+                                                       )
+                                    ) A
+                          )   A,   
+                          ( 
+                             SELECT *  
+                             FROM   TB_CODE  
+                             WHERE  CD_TYPE='MENU' 
+                          ) B
+                     WHERE A.MENU_GB = B.COMM_CD(+) 
+				  <if test="sort_ord  != null"> ORDER BY ${sort_ord} </if>
+				  <if test="sort_ord  == null"> ORDER BY B.ORD, A.TOP_MENU_NO, A.ORD,  A.MENU_NO	 </if>
+     </select> 
+
+  <!-- 발송 이메일 정보 INSERT -->
+   <insert  id="userEmailInsert" parameterType="java.util.Map"  >
+		INSERT INTO TB_EMAIL
+		(
+			SEQ,
+			USER_LEVEL,
+			TO_EMAIL,
+			FROM_EMAIL,
+			TITLE,
+			CONTENT,
+			REG_DT
+		) VALUES (
+			SEQ_TB_EMAIL_SEQ.nextval,
+            #{user_level         			, jdbcType=INTEGER},
+			#{to_email						, jdbcType=VARCHAR},
+			#{from_email					, jdbcType=VARCHAR},				
+			#{title							, jdbcType=VARCHAR},
+			#{content						, jdbcType=CLOB},
+			to_char(sysdate, 'yyyymmddhh24miss')
+		)     
+  </insert>
+
+  	<!-- 발송 이메일 정보 UPDATE -->
+  	<update id="userEmailUpdate" parameterType="java.util.Map">
+  		UPDATE TB_EMAIL SET
+			USER_LEVEL =			#{user_level				, jdbcType=INTEGER},
+			TO_EMAIL =			#{to_email					, jdbcType=VARCHAR},
+			FROM_EMAIL =			#{from_email				, jdbcType=VARCHAR},
+			TITLE =					#{title						, jdbcType=VARCHAR},
+			CONTENT =				#{content					, jdbcType=CLOB}
+		WHERE SEQ = 	#{seq, jdbcType=INTEGER}
+  	</update> 
+  
+ 	<!-- 이메일발송 관리 리스트 -->
+   	<select id="userEmailList" parameterType="java.util.Map"   resultType="java.util.Map">   
+             SELECT A.SEQ, A.USER_LEVEL, A.TO_EMAIL, A.FROM_EMAIL, A.TITLE, A.REG_DT
+             	FROM TB_EMAIL A 
+ 	 	    WHERE  1=1  
+			<include refid="userEmailListSearch"></include>
+			ORDER BY A.REG_DT DESC	  	 
+ 	</select>
+	
+	<!-- 이메일발송 관리 리스트 카운터 -->
+   	<select id="userEmailListCount" parameterType="java.util.Map"   resultType="int">   
+	 		SELECT 	count(*)
+			FROM 	TB_EMAIL A 
+			WHERE   1=1  
+			<include refid="userEmailListSearch"></include>
+ 	</select>
+
+   <!-- 이메일발송 관리 상세내용 -->
+  <select id="userEmailDetail"  parameterType="java.util.Map"  resultMap="emailMap">  	  	 
+	      SELECT * 
+	      FROM TB_EMAIL
+	      WHERE SEQ = #{seq, jdbcType=INTEGER}       
+  </select>  
+  
+  <!-- 이메일발송 관리 회원 리스트 -->
+    <select id="userEmailCheckList" parameterType="java.util.Map"   resultType="java.util.Map">  	
+		SELECT EMAIL FROM TB_USER WHERE USER_LEVEL >= #{user_level, jdbcType=INTEGER}
+		AND USE_YN = 'Y' AND MAILLING_YN = 'Y'
+		ORDER BY SEQ ASC
+    </select>
+    
+	<!-- 이메일발송 관리 삭제 -->
+	<delete id="userEmailDelete" parameterType="java.util.Map" >
+		DELETE FROM TB_EMAIL
+		WHERE SEQ = #{seq}
+	</delete> 
+
+	 <!-- 이메일발송 관리 리스트 검색조건 -->
+	  <sql id="userEmailListSearch">
+			<if test="keyword !=null and keyword != '' ">
+				 <if test="keykind == 'title'">  AND A.TITLE  like '%' || #{keyword} || '%' </if>
+				 <if test="keykind == 'to_email'">  AND A.TO_EMAIL  like '%' || #{keyword} || '%' </if>
+				 <if test="keykind == 'from_email'">  AND A.FROM_EMAIL  like '%' || #{keyword} || '%' </if>
+				 <if test="keykind == ''">  AND (A.TITLE  like '%' || #{keyword} || '%' OR A.TO_EMAIL  like '%' || #{keyword} || '%' OR A.FROM_EMAIL  like '%' || #{keyword} || '%') </if>
+			</if>	
+			<if test="txt_sdate != null and txt_sdate != '' and txt_edate != null and txt_edate != ''">
+				AND SUBSTR(A.REG_DT,1,8) BETWEEN REPLACE(#{txt_sdate}, '-','') AND REPLACE(#{txt_edate}, '-','')
+			</if>
+	  </sql>
+	  
+</mapper>

@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="menu">
+  <!--  cache eviction="WEAK" flushInterval="30000" readOnly="true" size="512"></cache  -->
+
+  	<select id="header" parameterType="java.util.Map"   resultType="java.util.Map">
+  	   	select  A.*,
+		       (  SELECT file_realnm
+		          FROM TB_FILE
+		          WHERE  REL_TBL  = 'TB_MENU'
+		          AND    FILE_GBN = 'NORMAL'
+		          AND    REL_KEY  = to_char(A.menu_no)
+		       ) IMG_NORMAL,
+		       (  SELECT file_realnm
+		          FROM TB_FILE
+		          WHERE  REL_TBL  = 'TB_MENU'
+		          AND    FILE_GBN = 'CHOOSE'
+		          AND    REL_KEY  = to_char(A.menu_no)
+		       ) IMG_CHOOSE
+		from   TB_MENU A
+		where  menu_gb = #{menu_gb}
+		and    use_yn  = #{use_yn}
+		and    menu_lvl <![CDATA[ <= ]]> 2
+		order  by top_menu_no, ord, full_menu_no
+ 	</select>
+
+   	<select id="subMenuInfo" parameterType="java.util.Map"   resultType="java.util.Map">
+        select A.*,
+               (  SELECT file_realnm
+                  FROM TB_FILE
+                  WHERE  REL_TBL  = 'TB_MENU'
+                  AND    FILE_GBN = 'LEFTLOG'
+                  AND    REL_KEY  = to_char(A.menu_no)
+               ) IMG_TITLE
+        from   TB_MENU A
+        where  menu_no in ( select top_menu_no
+                            from tb_menu
+                            where menu_no = #{menu_no}
+                          )
+        and    rownum = 1
+ 	</select>
+
+   	<select id="subLeftMenuList" parameterType="java.util.Map"   resultType="java.util.Map">
+        select A.*
+        from   TB_MENU A
+        where  top_menu_no in ( select top_menu_no
+                            from tb_menu
+                            where menu_no = #{menu_no}
+                          )
+        and    use_yn = #{use_yn}
+        <if test="menu_lvl != null">
+        and	menu_lvl = #{menu_lvl}
+        </if>
+        order  by top_menu_no, ord, full_menu_no
+ 	</select>
+
+   	  <!-- 왼쪽메뉴 튜닝 -->
+  	  <select id="subNewLeftMenuList" parameterType="java.util.Map"   resultType="java.util.Map">
+       	SELECT A.*
+			FROM TB_MENU A
+			WHERE USE_YN = #{use_yn}
+  			AND  top_menu_no in ( select top_menu_no
+	                            from tb_menu
+	                            where menu_no = #{menu_no}
+                          		)
+			AND MENU_GB = #{menu_gb}
+			AND MENU_LVL != 1
+			START WITH UP_MENU_NO = 0
+			CONNECT BY PRIOR MENU_NO = UP_MENU_NO
+			ORDER SIBLINGS BY ORD
+	</select>
+
+  	<!-- 1뎁스 메뉴 타이틀 추출 -->
+  	<select id="menuOneDepthTitle" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT MENU_NM, TOP_MENU_NO FROM TB_MENU
+			WHERE MENU_NO = (select top_menu_no from tb_menu where menu_no = #{menu_no})
+		    AND MENU_LVL = 1
+	   		AND USE_YN = #{use_yn}
+  	</select>
+
+   	<select id="menuDetail" parameterType="java.util.Map"   resultType="java.util.Map">
+     select A.*,
+             REGEXP_SUBSTR(IMG_SPLIT1, '[^,]+', 1, 1 ) AS IMG_TITLE,
+             REGEXP_SUBSTR(IMG_SPLIT1, '[^,]+', 1, 2 ) AS IMG_TITLE_DES1,
+             REGEXP_SUBSTR(IMG_SPLIT2, '[^,]+', 1, 1 ) AS IMG_LEFTLOGTXT,
+             REGEXP_SUBSTR(IMG_SPLIT2, '[^,]+', 1, 2 ) AS IMG_LEFTLOGTXT_DES1
+     from (
+	           select A.*,
+	                   (  SELECT max(file_realnm || ',' || DES1)
+	                      FROM TB_FILE
+	                      WHERE  REL_TBL  = 'TB_MENU'
+	                      AND    FILE_GBN in( 'TITLE', 'LEFTLOG')
+	                      AND    REL_KEY  = to_char(A.menu_no)
+	                   ) IMG_SPLIT1,
+	                   (  SELECT file_realnm || ',' || DES1
+	                      FROM TB_FILE
+	                      WHERE  REL_TBL  = 'TB_MENU'
+	                      AND    FILE_GBN = 'LEFTLOGTXT'
+	                      AND    REL_KEY  = to_char(A.menu_no)
+	                   ) IMG_SPLIT2 ,
+	                   <![CDATA[ ' > ' ]]> || menu_nm AS menu_title_path
+	            from   TB_MENU A
+	         <if test="menu_no   == null "> where  menu_no = -1 </if>
+	         <if test="menu_no   != null "> where  menu_no =  nvl(#{menu_no}, -999)   </if>
+         ) A
+ 	</select>
+
+<!--  		            AND    top_menu_no in ( select top_menu_no from tb_menu where menu_no = #{menu_no} )  -->
+
+   	<select id="menuPathDetail" parameterType="java.util.Map"   resultType="java.util.Map">
+		  SELECT A.*,
+		            (  SELECT file_realnm
+		                      FROM TB_FILE
+		                      WHERE  REL_TBL  = 'TB_MENU'
+		                      AND    FILE_GBN = 'IMG_VISUAL'
+		                      AND    REL_KEY  = to_char(A.menu_no)
+		            ) IMG_TITLE
+		    FROM (
+		            SELECT P.*, SYS_CONNECT_BY_PATH ( P.menu_nm, ' <![CDATA[ > ]]> ' ) AS menu_title_path
+		            FROM   TB_MENU P
+		            WHERE  use_yn = 'Y'
+		            START WITH menu_no in ( select top_menu_no  from tb_menu where menu_no = #{menu_no} )
+		            CONNECT BY  P.UP_MENU_NO = prior P.MENU_NO
+		         ) A
+		    WHERE menu_no = #{menu_no}
+ 	</select>
+
+   	<select id="menuFirstChild" parameterType="java.util.Map"   resultType="java.util.Map">
+		 select *
+		 from (
+		            select *
+		            from   tb_menu
+		            where  up_menu_no = #{menu_no}
+		            and use_yn = 'Y'
+		            order by ord
+		      )
+		where  rownum = 1
+ 	</select>
+
+   	<select id="menuDepthList" parameterType="java.util.Map"   resultType="java.util.Map">
+          SELECT P.*
+          FROM   TB_MENU P
+          WHERE  use_yn = 'Y'
+          AND    menu_gb = upper(#{menu_gb})
+          and    menu_lvl = #{menu_lvl}
+          order  by top_menu_no, ord
+ 	</select>
+
+     <!--  menu_no =194는 회원서비스임 -->
+     <select id="sitemapList" parameterType="java.util.Map"   resultType="java.util.Map">
+          SELECT  A.*,
+                  ( select count(*)
+                    from    TB_MENU B
+                    where   B.up_menu_no = A.menu_no
+                    and     B.use_yn = 'Y'
+                  ) as child_cnt,
+	               (  SELECT max(file_realnm)
+	                  FROM TB_FILE
+	                  WHERE  REL_TBL  = 'TB_MENU'
+	                  AND    FILE_GBN in ('NORMAL', 'LEFTLOG')
+	                  AND    REL_KEY  = to_char(A.menu_no)
+	               ) LEFT_IMG ,
+	               (  SELECT max(file_realnm)
+	                  FROM TB_FILE
+	                  WHERE  REL_TBL  = 'TB_MENU'
+	                  AND    FILE_GBN in  'LEFTLOG'
+	                  AND    REL_KEY  = to_char(A.menu_no)
+	               ) LEFT_LOGIMG
+          from (
+                    SELECT distinct A.*
+                    FROM TB_MENU A
+                    WHERE (use_yn = 'Y' or (menu_no = 194))
+                    and   menu_gb = #{menu_gb}
+                    START WITH menu_gb = #{menu_gb}
+                    CONNECT BY  PRIOR A.menu_no =  A.up_menu_no
+                    ORDER SIBLINGS BY menu_lvl, ord
+               ) A
+  </select>
+
+  <select id="menuAllDepthList" resultType="java.util.Map">
+  	<![CDATA[
+		SELECT A.*,
+			   SYS_CONNECT_BY_PATH(MENU_NM, '  >  ') AS MENU_TITLE_PATH,
+			   (SELECT LISTAGG(CTS_NO ||':'|| TTL, ',') WITHIN GROUP(ORDER BY CTS_NO ASC) AS TTL FROM TB_CONTENTS WHERE MENU_NO = A.MENU_NO) FULL_CTS_TTL,
+			   (SELECT COUNT(*) FROM TB_CONTENTS WHERE MENU_NO = A.MENU_NO AND USE_YN='Y') CTS_CNT
+		FROM TB_MENU A
+		WHERE USE_YN = #{use_yn}
+		AND MENU_GB = #{menu_gb}
+		AND MENU_LVL <= 2
+		AND TOP_MENU_NO NOT IN(
+		  SELECT MENU_NO
+		  FROM TB_MENU
+		  WHERE USE_YN = 'N'
+		  AND MENU_LVL = 1
+		)
+		START WITH UP_MENU_NO = 0
+		CONNECT BY PRIOR MENU_NO = UP_MENU_NO
+		ORDER SIBLINGS BY ORD
+	]]>
+  </select>
+
+  <select id="topMenuDetail" parameterType="java.util.Map" resultType="java.util.Map">
+  		SELECT A.*,
+		  (SELECT FILE_REALNM
+		   FROM
+		    (SELECT *
+		     FROM TB_FILE B
+		     WHERE REL_TBL='TB_MENU'
+		<if test="file_gbn != null">
+			 AND FILE_GBN = #{file_gbn}
+		</if>
+		     ORDER BY FILE_NO DESC
+		    )
+		   WHERE REL_KEY = A.MENU_NO
+		   AND ROWNUM <![CDATA[ <= ]]> 1
+		  ) FILE_REALNM
+		FROM TB_MENU A
+		WHERE MENU_NO = (SELECT TOP_MENU_NO FROM TB_MENU WHERE MENU_NO = #{menu_no})
+		AND USE_YN = 'Y'
+  </select>
+
+ 	<!-- 1뎁스 메뉴 -->
+    <select id="oneDepthLeftMenuList" parameterType="java.util.Map"   resultType="java.util.Map">
+		SELECT * FROM TB_MENU WHERE MENU_GB = 'HOME'
+		AND USE_YN = 'Y' AND MENU_LVL = '1'
+		ORDER BY ORD, TOP_MENU_NO
+ 	</select>
+
+  	<!-- 3뎁스 메뉴 -->
+    <select id="subThreeLeftMenuList" parameterType="java.util.Map"   resultType="java.util.Map">
+        select A.*
+        from   TB_MENU A
+        where  UP_MENU_NO = ( select UP_MENU_NO
+                            from tb_menu
+                            where menu_no = #{menu_no}
+                          )
+        and    use_yn = #{use_yn}
+        <if test="menu_lvl  != null ">
+        AND MENU_LVL = #{menu_lvl}
+        </if>
+        order  by top_menu_no, ord, full_menu_no
+ 	</select>
+
+</mapper>

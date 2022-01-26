@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="code">
+ 
+     <select id="codeList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+         SELECT *
+	     FROM 	TB_CODE 
+	     WHERE    1=1
+	     <if test="comm_cd     != null"> and comm_cd     =   #{comm_cd}     </if>
+	     <if test="cd_type     != null"> and CD_TYPE     =   #{cd_type}     </if>
+	     <if test="not_comm_cd != null"> and comm_cd     !=  #{not_comm_cd}     </if>
+	     <if test="code_len    != null"> and length(comm_cd) =  #{code_len}     </if>
+	     <if test="right_like != null">  and comm_cd     like '%' || #{right_like}     </if>
+	     <if test="left_like  != null">  and comm_cd     like #{left_like} || '%'     </if>
+		 <if test="cd_type_like  != null">  and CD_TYPE     like #{cd_type_like} || '%'     </if>
+         <if test="ord  != null"> ORDER BY  ${ord}, CD_TYPE </if>
+         <if test="ord  == null"> ORDER BY ORD, COMM_CD </if> 
+     </select>
+  
+  <select id="codeCount" parameterType="java.util.Map"   resultType="int">      
+         SELECT count(*)
+ 	     FROM 	TB_CODE 
+	     WHERE    1=1
+	     <if test="comm_cd     != null"> and comm_cd     =   #{comm_cd}     </if>
+	     <if test="cd_type     != null"> and CD_TYPE     =   #{cd_type}     </if>
+	     <if test="not_comm_cd != null"> and comm_cd     !=  #{not_comm_cd}     </if>
+	     <if test="code_len    != null"> and length(comm_cd) =  #{code_len}     </if>
+	     <if test="right_like != null">  and comm_cd     like '%' || #{right_like}     </if>
+	     <if test="left_like  != null">  and comm_cd     like #{left_like} || '%'     </if>
+     </select>
+  
+	 <select id="codeDetail" parameterType="java.util.Map" resultType="java.util.HashMap">
+		   SELECT	*
+		   FROM 	TB_CODE
+		   WHERE  CD_TYPE = #{cd_type} 
+           AND    COMM_CD = #{comm_cd}
+	 </select> 
+ 
+     <insert id="codeInsert" parameterType="java.util.Map" >
+	      INSERT INTO TB_CODE 
+	      (
+	          CD_TYPE     ,
+	          COMM_CD     , 
+	          CD_NM       ,
+	          ORD         , 
+	          CD_DESC     ,
+	          REG_DT   
+	      ) VALUES (
+	          upper(#{cd_type , jdbcType=VARCHAR}) , 
+	                #{comm_cd , jdbcType=VARCHAR}  ,
+	                #{cd_nm   , jdbcType=VARCHAR}  ,
+	            nvl(#{ord     , jdbcType=INTEGER}  , 1) ,
+	                #{cd_desc , jdbcType=VARCHAR}  ,	             
+	          to_char(sysdate, 'yyyymmddhh24miss')    
+	      )
+     </insert>
+
+     <update id="codeUpdate" parameterType="java.util.Map">
+         UPDATE TB_CODE
+         SET  CD_NM       = #{cd_nm   , jdbcType=VARCHAR} , 
+              	CD_DESC     = #{cd_desc , jdbcType=VARCHAR} ,
+              	ORD         = nvl(#{ord , jdbcType=INTEGER}, 0)  
+         WHERE CD_TYPE    = #{cd_type , jdbcType=VARCHAR}
+         AND   COMM_CD    = #{comm_cd , jdbcType=VARCHAR}
+     </update>     
+
+     <delete id="removeCode" parameterType="java.util.Map">
+	   	 DELETE FROM  TB_CODE 
+         WHERE CD_TYPE    = #{cd_type , jdbcType=VARCHAR}
+         <if test="comm_cd != null and comm_cd != '' "> AND   COMM_CD    = #{comm_cd , jdbcType=VARCHAR}   </if>
+     </delete>       
+          
+</mapper>

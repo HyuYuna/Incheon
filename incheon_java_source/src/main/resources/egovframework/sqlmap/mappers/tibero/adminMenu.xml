@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="adminMenu">
+		
+	<!-- 메뉴 리스트 카운터 -->
+     <select id="menuCount" parameterType="java.util.Map"   resultType="int">  	
+          SELECT  count(*)	      
+	      FROM TB_MENU A,   
+	           ( 
+	              SELECT *  
+                  FROM   TB_CODE B 
+                  WHERE  B.CD_TYPE='MENU' 
+               ) B
+          WHERE A.MENU_GB = B.COMM_CD(+)
+           
+          <include refid="listSearch"></include>
+          <if test="menu_gb    != null"> AND A.menu_gb   = #{menu_gb} </if>
+          <if test="up_menu_no != null"> AND A.up_menu_no = #{up_menu_no} </if>
+		        
+  </select>   
+ 	
+ 	<!-- 메뉴 리스트  -->
+     <select id="menuList" parameterType="java.util.Map"   resultType="java.util.Map">  	
+          SELECT  A.*, B.cd_nm as MENU_GB_NM	      
+	      FROM TB_MENU A,   
+	           ( 
+	              SELECT *  
+                  FROM   TB_CODE  
+                  WHERE  CD_TYPE='MENU' 
+               ) B
+          WHERE A.MENU_GB = B.COMM_CD(+)
+          <if test="cont_user_id    != null">    
+              AND   MENU_NO in (
+                                   SELECT menu_no
+                                   FROM (
+                                       SELECT *
+                                       FROM   TB_MENU P
+                                       WHERE  use_yn = 'Y' 
+                                       AND   CONT_USER_ID = #{cont_user_id}
+                                   ) P              
+                                   CONNECT BY prior P.UP_MENU_NO =  P.MENU_NO        
+                               ) 
+          </if>               
+          
+          <include refid="listSearch"></include>
+          <if test="menu_gb    != null"> AND A.menu_gb   = #{menu_gb} </if>
+          <if test="up_menu_no != null"> AND A.up_menu_no = #{up_menu_no} </if>
+	  
+	      <if test="sort_ord  != null"> ORDER BY ${sort_ord} </if>
+	      <if test="sort_ord  == null"> ORDER BY A.ORD, A.TOP_MENU_NO, B.ORD,  A.MENU_NO	 </if>
+		    
+   </select>    
+ 
+   <!-- 메뉴 리스트 검색조건 -->
+  <sql id="listSearch">
+		<if test="keyword !=null and keyword != '' ">
+			 <if test="keykind == 'menu_nm'">  AND A.MENU_NM  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == 'menu_url'">  AND A.MENU_URL  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == ''">  AND (A.MENU_NM  like '%' || #{keyword} || '%' OR A.MENU_URL  like '%' || #{keyword} || '%') </if>
+		</if>	
+		<if test="txt_sdate != null and txt_sdate != '' and txt_edate != null and txt_edate != ''">
+			AND SUBSTR(A.REG_DT,1,8) BETWEEN REPLACE(#{txt_sdate}, '-','') AND REPLACE(#{txt_edate}, '-','')
+		</if>
+  </sql>
+  
+   
+     <select id="menuDetail" parameterType="java.util.Map"   resultType="java.util.Map">  	
+        SELECT  A.*, B.cd_nm as MENU_GB_NM	      
+     FROM TB_MENU A,   
+          ( 
+             SELECT *  
+                FROM   TB_CODE  
+                WHERE  CD_TYPE='MENU' 
+             ) B
+        WHERE A.MENU_GB = B.COMM_CD
+        AND   A.MENU_NO = nvl(#{menu_no}, -999)      	 
+        
+	</select>    
+  
+     <select id="menuDownCount" parameterType="java.util.Map"   resultType="int">
+          SELECT  count(*)
+          FROM TB_MENU A
+          WHERE A.FULL_MENU_NO  LIKE  ( SELECT B.FULL_MENU_NO || '%'
+                                        FROM   TB_MENU B
+                                        WHERE  B.MENU_NO = #{menu_no   , jdbcType=INTEGER} 
+                                        AND    A.MENU_LVL <![CDATA[ > ]]> B.MENU_LVL 
+                                        )      
+  </select> 
+ 
+ 
+   <select id="menuNextValue" parameterType="java.util.Map"   resultType="Long">
+	      SELECT SEQ_TB_MENU_MENU_NO.nextval
+	      FROM dual  
+  </select>   
+ 
+  <!--  메뉴 등록하기 -->  
+  <insert  id="menuInsert" parameterType="java.util.Map"  >
+		INSERT INTO TB_MENU
+		(
+            MENU_NO     ,
+            MENU_NM     ,
+            MENU_GB     ,
+			MENU_URL    ,
+			MENU_LVL    ,
+			BRD_MGRNO   ,
+			TOP_MENU_NO ,
+			FULL_MENU_NO,
+			UP_MENU_NO  ,	
+			MENU_FMT_CD ,	
+			URL_TARGET  ,	
+			MENU_DESC   ,
+			USE_YN      ,
+			GNB_SHOW_YN      ,
+			LNB_SHOW_YN      ,
+			ORD         ,
+			CONT_USER_ID, 
+			DEPT_NM     ,		
+			DEPT_TELNO  ,		
+			DEPT_CHARGE_NM,	
+			DEPT_EMAIL,
+			MAIN_ADM_YN,
+			<if test="icon_value != null"> ICON_VALUE, </if>
+			REG_DT 
+		) VALUES (
+            #{menu_no     , jdbcType=INTEGER} ,
+            #{menu_nm     , jdbcType=VARCHAR} ,
+            nvl(#{menu_gb , jdbcType=VARCHAR}, 'ADMIN') ,
+            #{menu_url    , jdbcType=VARCHAR} ,            
+            #{menu_lvl    , jdbcType=INTEGER} ,
+            #{brd_mgrno   , jdbcType=INTEGER} ,
+            #{top_menu_no , jdbcType=INTEGER} ,
+            #{full_menu_no, jdbcType=VARCHAR} ,
+            #{up_menu_no  , jdbcType=INTEGER} ,            
+            #{menu_fmt_cd , jdbcType=VARCHAR} ,
+            #{url_target  , jdbcType=VARCHAR} ,
+            #{menu_desc   , jdbcType=VARCHAR} ,            
+	        nvl(#{use_yn  , jdbcType=VARCHAR}, 'Y') ,
+	        nvl(#{gnb_show_yn  , jdbcType=VARCHAR}, 'Y') ,
+	        nvl(#{lnb_show_yn  , jdbcType=VARCHAR}, 'Y') ,
+	        #{ord         , jdbcType=INTEGER} ,
+	        #{cont_user_id, jdbcType=VARCHAR} ,
+	        #{dept_nm     , jdbcType=VARCHAR} ,
+	        #{dept_telno  , jdbcType=VARCHAR} ,
+	        #{dept_charge_nm  , jdbcType=VARCHAR} ,
+	        #{dept_email      , jdbcType=VARCHAR},
+	        #{main_adm_yn      , jdbcType=CHAR},
+	 		<if test="icon_value != null and icon_value != ''">#{icon_value      , jdbcType=VARCHAR}, </if>
+	         to_char(sysdate, 'yyyymmdd') 
+		)     
+  </insert>   
+  
+ <!-- 메뉴  수정하기 -->
+  <update id="menuUpdate" parameterType="java.util.Map" >
+		UPDATE TB_MENU
+		SET MENU_GB        = Nvl(#{menu_gb,  jdbcType=VARCHAR}, menu_gb) ,
+		    MENU_NM        = Nvl(#{menu_nm,  jdbcType=VARCHAR}, menu_nm) ,
+		    BRD_MGRNO      = #{brd_mgrno   , jdbcType=INTEGER} ,
+		    USE_YN         = Nvl(#{use_yn,   jdbcType=VARCHAR}, USE_YN ),
+		    GNB_SHOW_YN         = Nvl(#{gnb_show_yn,   jdbcType=VARCHAR}, GNB_SHOW_YN ),
+		    LNB_SHOW_YN         = Nvl(#{lnb_show_yn,   jdbcType=VARCHAR}, LNB_SHOW_YN ),
+		    MENU_URL       = #{menu_url,     jdbcType=VARCHAR},
+		    URL_TARGET     = #{url_target,   jdbcType=VARCHAR},
+		    MENU_FMT_CD    = #{menu_fmt_cd , jdbcType=VARCHAR} ,
+		    MENU_DESC      = #{menu_desc   , jdbcType=VARCHAR} ,
+			DEPT_NM        = #{dept_nm     , jdbcType=VARCHAR} ,		
+			DEPT_TELNO     = #{dept_telno  , jdbcType=VARCHAR} ,		
+			DEPT_CHARGE_NM = #{dept_charge_nm  , jdbcType=VARCHAR},		    
+			DEPT_EMAIL     = #{dept_email      , jdbcType=VARCHAR},
+			CONT_USER_ID   = #{cont_user_id    , jdbcType=VARCHAR},
+			MAIN_ADM_YN   = #{main_adm_yn      , jdbcType=CHAR},
+			<if test="icon_value != null and icon_value != ''">ICON_VALUE = #{icon_value      , jdbcType=VARCHAR}, </if>
+		    ORD            = NVL(#{ord ,     jdbcType=INTEGER}, ORD )                 
+        WHERE MENU_NO = #{menu_no,	jdbcType=INTEGER}         
+  </update>     
+
+  <!-- 메뉴  데이타 삭제하기 -->
+  <delete id="menuDelete" parameterType="java.util.Map" >
+		DELETE FROM TB_MENU   
+		WHERE MENU_NO = #{menu_no}               
+  </delete>   
+  
+  <!-- 관리자 좌측 메뉴  -->
+  <select id="adminLeftmenuList" parameterType="java.util.Map"   resultType="java.util.Map"> 
+          SELECT  A.*,
+                   (
+					SELECT count(*)
+					FROM TB_MENU D
+					WHERE D.use_yn  ='Y'
+					AND   D.menu_gb = #{menu_gb, jdbcType=VARCHAR}
+					AND   D.top_menu_no = A.top_menu_no
+					AND   D.up_menu_no = A.MENU_NO  
+					AND  EXISTS (
+					SELECT 'X'
+					FROM   TB_USERMENU C
+					WHERE  USER_ID =  #{user_id,  jdbcType=VARCHAR}
+					AND    D.MENU_NO = C.MENU_NO
+					UNION ALL
+					SELECT 'X'
+					FROM   DUAL
+					WHERE  'ADMIN' = #{user_type,  jdbcType=VARCHAR}  
+                  )                               
+                ) as child_cnt
+          FROM TB_MENU A
+          WHERE A.USE_YN   ='Y'
+          AND   (A.MENU_LVL = 1 OR A.MENU_LVL = 2)   
+          AND   A.MENU_GB  = #{menu_gb, jdbcType=VARCHAR}
+          AND   A.menu_no in (
+                              SELECT  B.menu_no
+                              FROM    TB_USERMENU B
+                              WHERE  USER_ID = #{user_id,  jdbcType=VARCHAR}
+                              UNION ALL
+                              SELECT  C.menu_no
+                              FROM TB_MENU C
+                              WHERE C.USE_YN = 'Y'
+                              AND   (C.MENU_LVL = 1 OR C.MENU_LVL = 2)   
+                              AND   'ADMIN' = #{user_type,  jdbcType=VARCHAR}  
+                           ) 
+            CONNECT BY PRIOR A.menu_no = A.up_menu_no
+            START WITH not exists (
+                  select menu_no from TB_MENU B 
+                  where B.menu_no = A.up_menu_no
+              )
+            ORDER SIBLINGS BY ORD
+  </select>
+  
+  <!-- 관리자 메뉴 타이틀 불러오기 -->
+  <select id="adminMenuTitle" parameterType="java.util.Map"   resultType="java.util.Map"> 
+    SELECT A.MENU_NM, 
+    	(SELECT MENU_NM FROM TB_MENU WHERE MENU_NO = A.TOP_MENU_NO) AS ONE_MENU_NM
+    FROM TB_MENU A WHERE MENU_NO = #{menu_no,  jdbcType=INTEGER}  
+  </select>
+  
+</mapper>

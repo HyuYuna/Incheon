@@ -1,0 +1,24 @@
+개발기 및 테스트 장비 구성 시 필요사항
+
+1. DB 서버 구성
+   Tibero DB 설치 
+   D'amo 암호화 모듈 설치 
+   ※ 테스트 및 개발서버에 위 프로그램 설치 시 두 업체에 기술지원 필요
+
+2. WAS 서버 구성
+   Tomcat 7 설치
+   UBi Report 설치
+   AUi Grad 설치
+   rMate Chart 설치
+   ※ Ubi Report 설치 시 제조사에 기술지원 필요
+   ※ AUi Grad , rMate Chart 설치 시 제조사 홈페이지에서 DEMO 버전 받아 설치 하시면 됩니다. 
+      DEMO 버전 사용 기간이 매우 짦습니다.
+   ※ 위 Tomcat 7 설치 후 Apache Log4j 취약점 보안조치 해야 함 ( 해당 폴더에 Apache Log4j 취약점 관련 보안조치 권고.hwp 파일 참고 )
+      인천시 데이터센터 서비스 중인 서버에는 위 보안조치 완료 되어 있음.
+      
+3. WAS 서버 구성
+   Apache 2.4 설치   
+
+★ 위 소프트웨어 중 Tibero DB, D'amo 암호화 모듈, UBi Report는 귀사에서 설치하기 힘드니
+    2022년 유지보수 계약을 체결 후 개발서버에 개발 라이센스로 설치 요청 하셔야 될 것 같습니다.
+

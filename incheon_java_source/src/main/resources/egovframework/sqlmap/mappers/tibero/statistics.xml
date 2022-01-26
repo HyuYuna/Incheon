@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="statistics">
+	 
+  <!-- 로그 INSERT -->
+  <insert id="statisticsInsert" parameterType="java.util.Map">
+  		INSERT INTO TB_LOG_UV
+  		(
+			JOIN_DATE,
+			JOIN_TIME,
+			JOIN_WEEKDAY,
+			JOIN_ROUTE,
+			JOIN_IP,
+			JOIN_ID,
+			JOIN_NAME,
+			JOIN_PAGE,
+			JOIN_BROWSER,
+			JOIN_OS,
+			JOIN_AGENT,
+			JOIN_LANG,
+			REG_DT
+  		)
+  		VALUES 
+  		(
+  			to_char(sysdate, 'yyyymmdd'),
+			to_char(sysdate, 'hh24miss'),
+			to_char(sysdate, 'd'),
+			#{join_route,					jdbcType=VARCHAR},
+			#{join_ip,						jdbcType=VARCHAR},
+			#{join_id,						jdbcType=VARCHAR},
+			#{join_name,					jdbcType=VARCHAR},
+			#{join_page,					jdbcType=VARCHAR},
+			#{join_browser,				jdbcType=VARCHAR},
+			#{join_os,						jdbcType=VARCHAR},
+			#{join_agent,					jdbcType=VARCHAR},
+			#{join_lang,					jdbcType=VARCHAR},
+			to_char(sysdate, 'yyyymmddhh24miss') 	
+  		)
+  </insert>
+
+	 <!-- 통계 공통 쿼리 리스트 -->
+     <select id="commonStaticsCount"  parameterType="java.util.Map" resultType="java.util.HashMap">
+       SELECT 
+			(SELECT COUNT(*) FROM TB_LOG_UV) AS TOTALCOUNT, 
+			(SELECT COUNT(*) FROM TB_LOG_UV WHERE SUBSTR(JOIN_DATE, 1, 6) = REPLACE(#{search_ym}, '-','')) AS MONTHCOUNT,
+			(SELECT COUNT(*) FROM TB_LOG_UV WHERE JOIN_DATE= REPLACE(#{search_ymd},'-','')) AS DAYCOUNT,
+            CEIL((SELECT (SELECT COUNT(*) AS TOTALCOUNT FROM TB_LOG_UV) / 
+            (SELECT COUNT(*) FROM (SELECT JOIN_DATE FROM TB_LOG_UV GROUP BY JOIN_DATE)) AS DAYSUM FROM DUAL)) AS DAYSUM
+        FROM DUAL
+     </select>
+     
+     
+     <!-- time 쿼리 -->
+     <select id="staticsTimeList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+              SELECT SUM(JOIN_COUNT) AS JOIN_COUNT, SUBSTR(JOIN_TIME,1,2) AS JOIN_DATE FROM TB_LOG_UV
+              	WHERE JOIN_DATE = REPLACE(#{txt_sdate},'-','')
+              GROUP BY SUBSTR(JOIN_TIME,1,2)
+              ORDER BY SUBSTR(JOIN_TIME,1,2) ASC
+     </select>
+
+     <!-- day 쿼리 -->
+     <select id="staticsDayList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+			SELECT SUM(JOIN_COUNT) AS JOIN_COUNT, JOIN_DATE FROM TB_LOG_UV
+				WHERE JOIN_DATE BETWEEN REPLACE(#{txt_sdate},'-','') AND REPLACE(#{txt_edate},'-','')
+			GROUP BY JOIN_DATE
+			ORDER BY JOIN_DATE ASC
+     </select>
+
+     <!-- month 쿼리 -->
+     <select id="staticsMonthList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+        SELECT SUM(JOIN_COUNT) AS join_count, SUBSTR(JOIN_DATE,1,6) AS join_date 
+        	FROM TB_LOG_UV
+		WHERE SUBSTR(JOIN_DATE,1,4) = #{searchyeartext}
+		GROUP BY SUBSTR(JOIN_DATE,1,6)
+		ORDER BY SUBSTR(JOIN_DATE,1,6) ASC
+     </select>
+
+     <!-- year 쿼리 -->
+     <select id="staticsYearList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+		SELECT SUM(JOIN_COUNT) AS JOIN_COUNT,
+			SUBSTR(JOIN_DATE,1, 4) AS JOIN_DATE FROM TB_LOG_UV
+		GROUP BY SUBSTR(JOIN_DATE,1, 4)
+		ORDER BY SUBSTR(JOIN_DATE,1, 4) ASC
+     </select>
+     
+     <!--  referrer 리스트 쿼리 -->
+	<select id="referrerList" parameterType="java.util.Map" resultType="java.util.Map">
+	    SELECT a.*
+			FROM 
+	        (
+				SELECT a.*, ROWNUM AS pagingrow
+				FROM 
+	            (
+	                SELECT A.* FROM TB_LOG_UV A
+	                WHERE 1 = 1
+	                <include refid="listSearch"></include>
+	                ORDER BY REG_DT DESC
+	            ) a
+				<if test="page_end   != null">
+				WHERE ROWNUM <![CDATA[ <= ]]>
+				#{page_end}
+				</if>
+	        ) a
+			<if test="page_start   != null">
+				WHERE pagingrow <![CDATA[  >=  ]]>
+				#{page_start}
+			</if>
+	</select>
+	
+	<!-- referrer excel 리스트 -->
+	<select id="referrerExcelList" parameterType="java.util.Map" resultType="java.util.Map">
+         SELECT A.* FROM TB_LOG_UV A
+         WHERE 1 = 1
+         <include refid="listSearch"></include>
+         ORDER BY REG_DT DESC	
+	</select>
+	
+	<!--  referrer 리스트 카운터 쿼리 -->
+	<select id="referrerListCount" parameterType="java.util.Map" resultType="int">
+		SELECT COUNT(*) FROM TB_LOG_UV A
+		WHERE 1 = 1
+		<include refid="listSearch"></include>
+	</select>
+
+  <!-- 리스트 검색조건 -->
+  <sql id="listSearch">
+		<if test="keyword !=null and keyword != '' ">
+			 <if test="keykind == 'join_route'">  AND A.JOIN_ROUTE  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == 'join_page'">  AND A.JOIN_PAGE  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == ''">  AND (A.JOIN_ROUTE  like '%' || #{keyword} || '%' OR A.JOIN_PAGE  like '%' || #{keyword} || '%') </if>
+		</if>	
+		<if test="txt_sdate != null and txt_sdate != '' and txt_edate != null and txt_edate != ''">
+			AND SUBSTR(A.REG_DT,1,8) BETWEEN REPLACE(#{txt_sdate}, '-','') AND REPLACE(#{txt_edate}, '-','')
+		</if>
+  </sql>
+  
+</mapper>

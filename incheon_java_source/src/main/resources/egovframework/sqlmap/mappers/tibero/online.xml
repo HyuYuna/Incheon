@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="online">
+
+	<resultMap type="java.util.Map" id="onlineMap">
+	   <result property="CONTENT" column="CONTENT" javaType="String" jdbcType="CLOB"/>
+	   <result property="RE_CONTENT" column="RE_CONTENT" javaType="String" jdbcType="CLOB"/>
+	</resultMap>
+  
+	 <!-- 온라인문의 리스트 -->
+     <select id="onlineList"  parameterType="java.util.Map" resultMap="onlineMap">
+         SELECT A.*, B.*
+         ,(SELECT CD_NM FROM TB_CODE WHERE CD_TYPE = 'ONLINE_KIND' AND COMM_CD = A.KIND_CD) as CD_NM1
+	     FROM TB_ONLINE A 
+         LEFT JOIN TB_FILE B
+         ON A.SEQ = B.REL_KEY
+         AND B.REL_TBL = 'TB_ONLINE' 
+         AND B.FILE_GBN = 'FILE1'
+	     WHERE 1 = 1
+		<include refid="listSearch"></include>
+		ORDER BY A.SEQ DESC
+     </select>
+  
+   <!-- 온라인문의 리스트 카운터 -->
+   <select id="onlineListCount" parameterType="java.util.Map"   resultType="int">      
+         SELECT count(*)
+ 	     FROM TB_ONLINE A
+	     WHERE 1 = 1
+		<include refid="listSearch"></include> 
+   </select>
+
+  <!-- 리스트 검색조건 -->
+  <sql id="listSearch">
+		<if test="keyword !=null and keyword != '' ">
+			 <if test="keykind == 'title'">  AND A.TITLE  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == 'company'"> AND A.COMPANY like '%' || #{keyword} || '%'</if>
+			 <if test="keykind == 'email'">  AND A.EMAIL  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == 'name'">  AND A.NAME  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == ''">  AND (A.TITLE  like '%' || #{keyword} || '%' OR A.COMPANY  like '%' || #{keyword} || '%' OR A.EMAIL  like '%' || #{keyword} || '%' OR A.NAME  like '%' || #{keyword} || '%') </if>
+		</if>	
+		<if test="txt_sdate != null and txt_sdate != '' and txt_edate != null and txt_edate != ''">
+			AND SUBSTR(A.REG_DT,1,8) BETWEEN REPLACE(#{txt_sdate}, '-','') AND REPLACE(#{txt_edate}, '-','')
+		</if>
+  </sql>
+ 
+   <!-- 온라인문의 상세내용 -->
+  <select id="onlineDetail"  parameterType="java.util.Map"  resultMap="onlineMap">  	  	 
+	      SELECT A.*
+	       ,(SELECT CD_NM FROM TB_CODE WHERE CD_TYPE = 'ONLINE_KIND' AND COMM_CD = A.KIND_CD) as CD_NM1
+	      FROM TB_ONLINE A
+	      WHERE A.SEQ = #{seq, jdbcType=INTEGER}       
+  </select>  
+  
+  <!-- 온라인문의 INSERT -->
+  <insert id="onlineInsert" parameterType="java.util.Map">
+  		INSERT INTO TB_ONLINE 
+  		(
+		    SEQ,
+		    KIND_CD,
+		    COMPANY,
+		    NAME,
+		    TEL,
+		    HP,
+		    EMAIL,
+		    TITLE,
+		    CONTENT,
+		    REG_IP,
+		    REG_DT
+  		)
+  		VALUES 
+  		(
+  			SEQ_TB_ONLINE_SEQ.nextval,
+			#{kind_cd,							jdbcType=VARCHAR},
+			#{company,						jdbcType=VARCHAR},
+			#{name,								jdbcType=VARCHAR},
+			#{tel,								jdbcType=VARCHAR},
+			#{hp,									jdbcType=VARCHAR},
+			#{email,								jdbcType=VARCHAR},
+			#{title,								jdbcType=VARCHAR},
+			#{content,							jdbcType=CLOB},
+			#{reg_ip,							jdbcType=VARCHAR},
+			to_char(sysdate, 'yyyymmddhh24miss') 	
+  		)
+  </insert>
+	
+  <!-- 온라인문의 UPDATE -->
+  <update id="onlineUpdate" parameterType="java.util.Map">
+  		UPDATE TB_ONLINE SET
+  			EMAIL						= #{email,							jdbcType=VARCHAR},
+			RE_TITLE					= #{re_title,						jdbcType=VARCHAR},
+			RE_CONTENT				= #{re_content,					jdbcType=CLOB},
+			RE_EMAIL					= #{re_email,						jdbcType=VARCHAR},
+			STATE						= #{state,							jdbcType=VARCHAR},
+			RE_REGDT					= to_char(sysdate, 'yyyymmddhh24miss')
+		WHERE SEQ = #{seq, jdbcType=INTEGER}
+  </update>
+  
+  <!-- 온라인문의 DELETE -->
+  <delete id="onlineDelete" parameterType="java.util.Map">
+  		DELETE FROM TB_ONLINE
+  		WHERE SEQ = #{seq, jdbcType=INTEGER}
+  </delete>
+
+</mapper>

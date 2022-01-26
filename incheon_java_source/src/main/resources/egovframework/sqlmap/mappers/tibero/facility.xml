@@ -1,0 +1,593 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="facility">
+
+    <!-- 코드 리스트 -->
+	<select id="codeList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+		WITH TEMP AS (
+			SELECT
+				COMMCD,			/* 코드명  */
+				COMMCD_VALUE	/* 코드타이틀 */
+			FROM DPWFMS.COMMON_CODE
+			WHERE COMMCD_FG = #{cg}
+			AND USE_FG = '1'
+			ORDER BY SORT_ORD
+		)
+		SELECT
+			*
+		FROM TEMP
+	</select>
+
+   	<!-- 지역 카테고리 리스트 -->
+	<select id="areaList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+		WITH TEMP AS (
+			SELECT
+				COMMCD,			/* 코드명  */
+				COMMCD_VALUE	/* 코드타이틀 */
+			FROM DPWFMS.COMMON_CODE
+			WHERE COMMCD_FG = 'CG01'
+			AND USE_FG = '1'
+			ORDER BY SORT_ORD
+		)
+		SELECT
+			COMMCD AS GU,
+			COMMCD_VALUE AS GU_NM
+		FROM TEMP
+	</select>
+
+	<!-- 시설 카테고리 1차 리스트 (전체지역) -->
+	<select id="ca1List"  parameterType="java.util.Map" resultType="java.util.HashMap">
+		WITH TEMP AS (
+			SELECT
+				 CASE A.COMMCD WHEN 'A' THEN 'WF02'
+				 			   WHEN 'B' THEN 'WF03'
+				 			   WHEN 'C' THEN 'WF04'
+				 			   WHEN 'D' THEN 'WF05'
+				 			   WHEN 'E' THEN 'WF06'
+				 END AS CA1,
+				 CASE A.COMMCD WHEN 'D' THEN '장애인 재가지원서비스'
+				 ELSE A.COMMCD_VALUE END AS CA1_NM
+			FROM DPWFMS.COMMON_CODE A
+				WHERE COMMCD_FG = 'WF01'
+				AND A.USE_FG = '1'
+				ORDER BY SORT_ORD
+		)
+		 SELECT
+		 	A.CA1,
+			A.CA1_NM,
+			(SELECT MENU_NO FROM DPWFHM.TB_MENU WHERE MENU_LVL = 2 AND MENU_URL = '/facilityList.do?ca1='||A.CA1) AS MENUNO
+		 FROM TEMP A
+	</select>
+
+	<!-- 시설 카테고리 2차 리스트 (전체지역) -->
+	<select id="ca2List"  parameterType="java.util.Map" resultType="java.util.HashMap">
+	    <![CDATA[
+			WITH TEMP AS (
+				SELECT
+					COMMCD_FG AS CA1,			/* 코드명 1차 */
+					COMMCD AS CA2,				/* 코드명 2차 */
+					COMMCD_VALUE  AS CA2_NM 	/* 코드타이틀 */
+				FROM DPWFMS.COMMON_CODE
+				WHERE COMMCD_FG = #{ca1}
+				AND USE_FG = '1'
+				ORDER BY SORT_ORD
+			)
+			SELECT
+				CA1,
+				CA2,
+				CA2_NM,
+				(SELECT MENU_NO FROM DPWFHM.TB_MENU WHERE MENU_LVL = 3 AND MENU_URL = '/facilityList.do?ca1='||A.CA1||'&ca2='||A.CA2) AS MENUNO
+			FROM TEMP A
+		]]>
+	</select>
+
+	<!-- 시설 카테고리 1차 리스트 (특정 지역포함) -->
+	<select id="ca1AreaList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+	    <![CDATA[
+			WITH TEMP AS (
+				SELECT
+				 CASE A.COMMCD WHEN 'A' THEN 'WF02'
+				 			   WHEN 'B' THEN 'WF03'
+				 			   WHEN 'C' THEN 'WF04'
+				 			   WHEN 'D' THEN 'WF05'
+				 			   WHEN 'E' THEN 'WF06'
+				 END AS CA1,
+				 CASE A.COMMCD WHEN 'D' THEN '장애인 재가지원서비스'
+				 ELSE A.COMMCD_VALUE END AS CA1_NM
+				FROM DPWFMS.COMMON_CODE A WHERE COMMCD_FG = 'WF01' AND A.USE_FG = '1' AND COMMCD IN
+				(
+				  SELECT  DISTINCT A.WFFCLTY_CLAS
+				   FROM DPWFMS.WFFCLTY_BASE   A
+				      , DPWFMS.WFFCLTY_DETAIL B
+				  WHERE B.GU_CD = #{gu}
+				    AND A.WFFCLTY_CD = B.WFFCLTY_CD
+				    AND A.USE_FG = '1'
+				)
+				ORDER BY SORT_ORD
+			)
+			 SELECT
+			 CA1,
+			 CA1_NM,
+			 (SELECT MENU_NO FROM DPWFHM.TB_MENU WHERE MENU_LVL = 2 AND MENU_URL = '/facilityList.do?ca1='||A.CA1) AS MENUNO
+			 FROM TEMP A
+		 ]]>
+	</select>
+
+	<!-- 시설 카테고리 2차 리스트 (특정 지역포함) -->
+	<select id="ca2AreaList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+	    <![CDATA[
+			WITH TEMP AS (
+			  SELECT A.WFFCLTY_TP AS CA2 	/* 카테고리 2 */
+			      , MIN
+			        (
+			        CASE A.WFFCLTY_CLAS WHEN 'A' THEN (SELECT COMMCD_VALUE FROM DPWFMS.COMMON_CODE WHERE COMMCD_FG = 'WF02' AND COMMCD = A.WFFCLTY_TP AND USE_FG = '1')
+			                            WHEN 'B' THEN (SELECT COMMCD_VALUE FROM DPWFMS.COMMON_CODE WHERE COMMCD_FG = 'WF03' AND COMMCD = A.WFFCLTY_TP AND USE_FG = '1')
+			                            WHEN 'C' THEN (SELECT COMMCD_VALUE FROM DPWFMS.COMMON_CODE WHERE COMMCD_FG = 'WF04' AND COMMCD = A.WFFCLTY_TP AND USE_FG = '1')
+			                            WHEN 'D' THEN (SELECT COMMCD_VALUE FROM DPWFMS.COMMON_CODE WHERE COMMCD_FG = 'WF05' AND COMMCD = A.WFFCLTY_TP AND USE_FG = '1')
+			                            WHEN 'E' THEN (SELECT COMMCD_VALUE FROM DPWFMS.COMMON_CODE WHERE COMMCD_FG = 'WF06' AND COMMCD = A.WFFCLTY_TP AND USE_FG = '1')
+			        END
+			        ) AS CA2_NM				/* 카테고리 2 타이틀 */
+			      , MIN
+			      (
+						 CASE SUBSTRING(A.WFFCLTY_TP, 1, 1) WHEN 'A' THEN 'WF02'
+						                  WHEN 'B' THEN 'WF03'
+						                  WHEN 'C' THEN 'WF04'
+						                  WHEN 'D' THEN 'WF05'
+						                  WHEN 'E' THEN 'WF06'
+						END
+			      ) AS CA1 					 /* 카테고리 1 */
+			   FROM DPWFMS.WFFCLTY_BASE   A
+			      , DPWFMS.WFFCLTY_DETAIL B
+			  WHERE B.GU_CD = #{gu}
+			    AND A.WFFCLTY_CD = B.WFFCLTY_CD
+			    AND A.USE_FG = '1'
+			  GROUP BY A.WFFCLTY_TP
+			  ORDER BY A.WFFCLTY_TP
+			)
+			SELECT
+				CA1,
+				CA2,
+				CA2_NM,
+				(SELECT MENU_NO FROM DPWFHM.TB_MENU WHERE MENU_LVL = 3 AND MENU_URL = '/facilityList.do?ca1='||A.CA1||'&ca2='||A.CA2) AS MENUNO
+			FROM TEMP A
+			WHERE A.CA1 = #{ca1}
+		]]>
+	</select>
+
+	<!-- 시설 리스트 -->
+	<select id="facilityList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+		WITH STND AS (
+			SELECT #{page_now} AS CURRENT_INDEX
+				,#{per_page} AS RECORD_PER_PAGE
+				FROM DUAL
+		), DATA_LIST AS (
+			SELECT
+				ROW_NUMBER() OVER (PARTITION BY 1 ORDER BY A.WFFCLTY_NM) AS rno
+				,A.WFFCLTY_CD		/* 복지시설코드 */
+				,A.WFFCLTY_NM		/* 복지시설명 */
+				,A.WFFCLTY_CLAS		/* 복지시설 분류코드(통합코드:WF01) */
+				,A.WFFCLTY_TP		/* 복지시설 유형코드 */
+				,A.UNIQUE_NO		/* 사업자번호(직업재활시설은 사업자번호 그외  시설은 고유번호 입력) */
+				,A.OPERATE_FG		/* 운영여부 */
+				,A.HIGH_WFFCLTY_CD	/* 상위복지시설코드 */
+				,A.USE_FG			/* 사용여부 */
+				,A.OGNZT_CD			/* 단체코드 */
+				,B.INTENDANT_NM		/* 시설장명 */
+				,B.WORKER_CNT		/* 종사자인원 */
+				,B.WORKER_DETAIL	/* 종사자내역 */
+				,DPWFMS.get_PhoneNum(B.PHONE_NUM) AS PHONE_NUM		/* 시설전화번호 */
+				,DPWFMS.get_PhoneNum(B.FAX_NUM) AS FAX_NUM			/* 시설팩스번호 */
+				,B.ZIP_CD			/* 우편번호 */
+				,B.ADDR_BASE		/* 기본주소 */
+				,B.ADDR_DETAIL		/* 상세주소 */
+				,B.GU_CD			/* 인천시 군구 코드 */
+				,B.ESTABLISH_DD				/* 설립일자 yyyymmdd 문자 */
+				,B.OWNERSHIP_TP				/* 시설소유형태 */
+				,B.OWNERSHIP_ETC_DETAIL		/* 시설소유형태기타내역 */
+				,B.REVENUE_SOURCE_TP		/* 자체수입 재원 구분 */
+				,B.REVENUE_ETC_DETAIL		/* 자체수입 기타 내역 */
+				,B.LUNCH_TP					/* 이용자중식제공형태 */
+				,B.LUNCH_ETC_DETAIL			/* 이용자중식제공기타내역 */
+				,B.GOVSUBY_FG				/* 국비보조금지급여뷰 */
+				,B.CITSUBY_FG				/* 시비보조금지급여부 */
+				,B.GUSUBY_FG				/* 군구보조금 지급여부 */
+				,B.HOMEPAGE_URL			/* 웹사이트URL */
+				,B.CAPACITY				/* 정원 */
+				,B.AREA					/* 면적 */
+				,B.ETC_DETAIL1			/* 기타정보1 */
+				,B.ETC_DETAIL2			/* 기타정보2 */
+				,B.ETC_DETAIL3			/* 기타정보3 */
+				,B.ETC_DETAIL4			/* 기타정보4 */
+				,(SELECT COMMCD_VALUE FROM DPWFMS.COMMON_CODE WHERE COMMCD = A.WFFCLTY_CLAS AND COMMCD_FG = 'WF01' AND USE_FG = '1') AS CA1NM			/* 시설종류 */
+				,(SELECT DISTINCT COMMCD_VALUE FROM DPWFMS.COMMON_CODE WHERE COMMCD = A.WFFCLTY_TP AND SUBSTRING(COMMCD_FG, 1, 2) = 'WF' AND USE_FG = '1') AS CA2NM		/* 시설유형 */
+				,INSTR((SELECT LISTAGG(COMMCD, ',') WITHIN GROUP (ORDER BY COMMCD) FROM DPWFMS.COMMON_CODE WHERE COMMCD_FG = 'TP16' AND USE_FG = '1'), A.WFFCLTY_TP) AS REGCNT /* 예약가능 여부 0 이상이면 가능 */
+			FROM
+			DPWFMS.WFFCLTY_BASE A
+			,DPWFMS.WFFCLTY_DETAIL B
+			WHERE A.WFFCLTY_CD = B.WFFCLTY_CD
+			AND A.USE_FG = '1'
+			<if test="gu != null and gu != ''">
+				AND B.GU_CD = #{gu}			/* 구군 조회 */
+			</if>
+			<if test="ca1 != null and ca1 != ''">
+				AND A.WFFCLTY_CLAS = (SELECT DISTINCT SUBSTRING(COMMCD, 1, 1) FROM DPWFMS.COMMON_CODE WHERE COMMCD_FG = #{ca1} AND USE_FG = '1')		/* 1차 카테고리 조회 */
+			</if>
+			<if test="ca2 != null and ca2 != '' ">
+				AND A.WFFCLTY_TP = #{ca2}	/* 2차 카테고리 조회 */
+			</if>
+			<if test="shtext != null and shtext != '' ">
+				AND A.WFFCLTY_NM LIKE '%' || #{shtext} || '%'	/* 시설명 검색 조회 */
+			</if>
+		)
+		SELECT
+			*
+			FROM DATA_LIST D
+			,STND ST
+		WHERE D.RNO BETWEEN (((ST.CURRENT_INDEX -1) * ST.RECORD_PER_PAGE) + 1) AND (ST.CURRENT_INDEX * ST.RECORD_PER_PAGE)
+	</select>
+
+	<!-- 시설 리스트 카운터 -->
+	<select id="facilityListCount"  parameterType="java.util.Map" resultType="int">
+		SELECT
+			COUNT(*)
+		FROM
+		DPWFMS.WFFCLTY_BASE A
+		,DPWFMS.WFFCLTY_DETAIL B
+		WHERE A.WFFCLTY_CD = B.WFFCLTY_CD
+		AND A.USE_FG = '1'
+		<if test="gu != null and gu != ''">
+			AND B.GU_CD = #{gu}			/* 구군 조회 */
+		</if>
+		<if test="ca1 != null and ca1 != ''">
+			AND A.WFFCLTY_CLAS = (SELECT DISTINCT SUBSTRING(COMMCD, 1, 1) FROM DPWFMS.COMMON_CODE WHERE COMMCD_FG = #{ca1} AND USE_FG = '1')		/* 1차 카테고리 조회 */
+		</if>
+		<if test="ca2 != null and ca2 != '' ">
+			AND A.WFFCLTY_TP = #{ca2}	/* 2차 카테고리 조회 */
+		</if>
+		<if test="shtext != null and shtext != '' ">
+			AND A.WFFCLTY_NM LIKE '%' || #{shtext} || '%'	/* 시설명 검색 조회 */
+		</if>
+	</select>
+
+	<!-- 시설 상세내용 -->
+	<select id="facilityDetail"  parameterType="java.util.Map" resultType="java.util.HashMap">
+		WITH TEMP AS (
+			SELECT
+				 A.WFFCLTY_CD		/* 복지시설코드 */
+				,A.WFFCLTY_NM		/* 복지시설명 */
+				,A.WFFCLTY_CLAS		/* 복지시설 분류코드(통합코드:WF01) */
+				,A.WFFCLTY_TP		/* 복지시설 유형코드 */
+				,A.UNIQUE_NO		/* 사업자번호(직업재활시설은 사업자번호 그외  시설은 고유번호 입력) */
+				,A.OPERATE_FG		/* 운영여부 */
+				,A.HIGH_WFFCLTY_CD	/* 상위복지시설코드 */
+				,A.USE_FG			/* 사용여부 */
+				,A.OGNZT_CD			/* 단체코드 */
+				,B.INTENDANT_NM		/* 시설장명 */
+				,B.WORKER_CNT		/* 종사자인원 */
+				,B.WORKER_DETAIL	/* 종사자내역 */
+				,DPWFMS.get_PhoneNum(B.PHONE_NUM) AS PHONE_NUM		/* 시설전화번호 */
+				,DPWFMS.get_PhoneNum(B.FAX_NUM) AS FAX_NUM			/* 시설팩스번호 */
+				,B.ZIP_CD			/* 우편번호 */
+				,B.ADDR_BASE		/* 기본주소 */
+				,B.ADDR_DETAIL		/* 상세주소 */
+				,B.GU_CD			/* 인천시 군구 코드 */
+				,B.ESTABLISH_DD				/* 설립일자 yyyymmdd 문자 */
+				,B.OWNERSHIP_TP				/* 시설소유형태 */
+				,B.OWNERSHIP_ETC_DETAIL		/* 시설소유형태기타내역 */
+				,B.REVENUE_SOURCE_TP		/* 자체수입 재원 구분 */
+				,B.REVENUE_ETC_DETAIL		/* 자체수입 기타 내역 */
+				,B.LUNCH_TP					/* 이용자중식제공형태 */
+				,B.LUNCH_ETC_DETAIL			/* 이용자중식제공기타내역 */
+				,B.GOVSUBY_FG				/* 국비보조금지급여뷰 */
+				,B.CITSUBY_FG				/* 시비보조금지급여부 */
+				,B.GUSUBY_FG				/* 군구보조금 지급여부 */
+				,B.HOMEPAGE_URL			/* 웹사이트URL */
+				,B.CAPACITY				/* 정원 */
+				,B.AREA					/* 면적 */
+				,B.ETC_DETAIL1			/* 기타정보1 */
+				,B.ETC_DETAIL2			/* 기타정보2 */
+				,B.ETC_DETAIL3			/* 기타정보3 */
+				,B.ETC_DETAIL4			/* 기타정보4 */
+				,(SELECT COMMCD_VALUE FROM DPWFMS.COMMON_CODE WHERE COMMCD = A.WFFCLTY_CLAS AND COMMCD_FG = 'WF01'  AND USE_FG = '1') AS CA1NM							/* 시설종류 */
+				,(SELECT DISTINCT COMMCD_VALUE FROM DPWFMS.COMMON_CODE WHERE COMMCD = A.WFFCLTY_TP AND SUBSTRING(COMMCD_FG, 1, 2) = 'WF' AND USE_FG = '1') AS CA2NM		/* 시설유형 */
+				,INSTR((select LISTAGG(COMMCD, ',') WITHIN GROUP (ORDER BY COMMCD) FROM DPWFMS.COMMON_CODE WHERE COMMCD_FG = 'TP16' AND USE_FG = '1'), A.WFFCLTY_TP) AS REGCNT /* 예약가능 여부 0 이상이면 가능 */
+				,(SELECT OGNZT_NM FROM DPWFMS.ORGANIZATION WHERE OGNZT_CD = A.OGNZT_CD AND USE_FG = '1') AS OPERATION		/* 운영주체 */
+				,(SELECT COMMCD_VALUE FROM DPWFMS.COMMON_CODE WHERE COMMCD_FG  = 'TP10' AND COMMCD = A.WFFCLTY_CLAS AND USE_FG = '1') AS LUNCH   		/* 중식 */
+				,(
+					SELECT LISTAGG(B.COMMCD_VALUE, ',') WITHIN GROUP (ORDER BY SORT_ORD) FROM
+						DPWFMS.SERVICE_DISABLE_TYPE A,
+						DPWFMS.COMMON_CODE B
+						WHERE A.DISABLE_TP = B.COMMCD
+						AND COMMCD_FG = 'TP05'
+						AND A.WFFCLTY_CD = #{wcd}
+						AND B.USE_FG = '1'
+				) AS OBSTACLE /* 서비스 장애 */
+				,(
+					SELECT
+					LISTAGG(PRACTICIAN, ',') WITHIN GROUP (ORDER BY A.SORT_ORD	)
+					FROM
+					(
+					SELECT
+					  B.COMMCD_VALUE || '(' || COUNT(*) || ')' AS PRACTICIAN
+					, B.SORT_ORD FROM DPWFMS.WFFCLTY_WORKER A
+					,DPWFMS.COMMON_CODE B
+					WHERE SUBSTRING(A.POSITION_CD, 1, 4) = B.COMMCD_FG
+					AND SUBSTRING(A.POSITION_CD, 5, 2) = B.COMMCD
+					AND A.WFFCLTY_CD = #{wcd}
+					AND A.USE_FG = '1'
+					AND B.USE_FG = '1'
+					GROUP BY B.COMMCD_VALUE, B.SORT_ORD
+					) A
+				) AS PRACTICIAN		/* 서비스 종사자 */
+				,(SELECT NVL(COUNT(*), 0) FROM DPWFMS.WFFCLTY_ENTER WHERE WFFCLTY_CD = #{wcd} AND LVHS_DD IS NULL) AS HYUNWON /* 현원 */
+			FROM
+			DPWFMS.WFFCLTY_BASE A
+			,DPWFMS.WFFCLTY_DETAIL B
+			WHERE A.WFFCLTY_CD = B.WFFCLTY_CD
+			AND A.WFFCLTY_CD = #{wcd}
+			AND A.USE_FG = '1'
+		)
+		SELECT
+			*
+			FROM TEMP
+	</select>
+
+	<!-- 예약자 현황 추출 -->
+	<select id="selectAwaiterCount" parameterType="java.util.Map" resultType="int">
+		SELECT COUNT(*) FROM DPWFMS.WFFCLTY_AWAITER
+		WHERE WFFCLTY_CD = #{wcd}
+		AND PROGRESS_STS = 0
+	</select>
+
+	<!-- 예약자 중복확인 -->
+   <select id="selectAwaiterCheck" parameterType="java.util.Map" resultType="java.util.HashMap">
+		SELECT PROGRESS_STS FROM DPWFMS.WFFCLTY_AWAITER
+			WHERE RSVCTM = #{rsvctm}
+			AND ENC_PHONE_NUM = (SELECT DPWFMS.enc_b64('KEY1', #{enc_phone_num}) FROM DUAL)
+			AND (PROGRESS_STS = 0 OR PROGRESS_STS = 1)
+			AND WFFCLTY_CD = #{wcd}
+ 	</select>
+
+	<!-- 예약자 접수 -->
+	<insert id="insertAwaiter" parameterType="java.util.Map">
+		INSERT INTO DPWFMS.WFFCLTY_AWAITER
+		(
+		RECEIVE_DD,					/* 예약접수일자(yyyymmdd) */
+		RECEIVE_SEQNO,				/* 예약접수순번(일자별 순번) */
+		RECEIVE_TM,					/* 예약접수시간 (시간분초 : 140201) */
+		RSVCTM,						/* 예약자 */
+		ENC_PHONE_NUM,				/* 연락처 */
+		ENC_PASSWORD,				/* 비밀번호 */
+		EMAIL,						/* 이메일 */
+		DISABLE_TP,					/* 시설이용대상자장애유형 (NULL) */
+		DISABLE_DGREE_FG,			/* 시설이용대상자장애정도 (NULL) */
+		NOTE,						/* 비고 */
+		PROGRESS_STS,				/* 진행상태 (기본 0) */
+		PROCESS_DT,					/* 처리일자(date타입) */
+		DISPOSER,					/* 작업자 (C2000021) */
+		WFFCLTY_CD,					/* 복지시설코드 */
+		USE_FG,						/* 사용여부 (기본 1) */
+		REGIST_DT,					/* 등록일 (date타입) */
+		REGISTERER					/* 등록자 (test) */
+		)
+		VALUES (
+		#{receive_dd},
+		(SELECT NVL(MAX(RECEIVE_SEQNO + 1), 1) FROM DPWFMS.WFFCLTY_AWAITER WHERE RECEIVE_DD = #{receive_dd}),
+	 	#{receive_tm},
+	 	#{rsvctm},
+	 	(SELECT DPWFMS.enc_b64('KEY1', #{enc_phone_num}) FROM DUAL),
+	 	(SELECT HASH_STR('71', #{enc_password}) FROM DUAL),
+		#{email},						/* 이메일 */
+		#{disable_tp},					/* 시설이용대상자장애유형 (NULL) */
+		#{disable_dgree_fg},			/* 시설이용대상자장애정도 (NULL) */
+		#{note},						/* 비고 */
+		#{progress_sts},				/* 진행상태 (기본 0) */
+		#{process_dt},					/* 처리일자(date타입) */
+		NULL,							/* 작업자 (C2000021) */
+		#{wffclty_cd},					/* 복지시설코드 */
+		#{use_fg},						/* 사용여부 (기본 1) */
+		#{regist_dt},					/* 등록일 (date타입) */
+		'HOMEPAGE'						/* 등록자 (test) */
+	 	)
+	</insert>
+
+		<!-- 예약자 접수 -->
+	<update id="updateAwaiter" parameterType="java.util.Map">
+		UPDATE DPWFMS.WFFCLTY_AWAITER SET
+			RSVCTM						= #{rsvctm}
+			,ENC_PHONE_NUM				= (SELECT DPWFMS.enc_b64('KEY1', #{enc_phone_num}) FROM DUAL)
+			,ENC_PASSWORD				= (SELECT HASH_STR('71', #{enc_password}) FROM DUAL)
+			,EMAIL						= #{email}
+			,DISABLE_TP					= #{disable_tp}
+			,DISABLE_DGREE_FG			= #{disable_dgree_fg}
+			,NOTE						= #{note}
+			WHERE RECEIVE_DD = #{dd}
+			AND RECEIVE_SEQNO = #{seq}
+	</update>
+
+	<!-- 시설 이미지 리스트 -->
+	<select id="facilityPicList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+		WITH DATA_LIST AS (
+			SELECT
+				WFFCLTY_CD
+				,PICTURE_NM
+				,PICTURE_PATH
+			FROM DPWFMS.WFFCLTY_PICTURE WHERE WFFCLTY_CD = #{wcd}
+			ORDER BY REGIST_DT
+		)
+		SELECT * FROM DATA_LIST
+	</select>
+
+
+	<!-- 시설 프로그램 리스트 -->
+	<select id="facilityProgramsList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+		WITH STND AS (
+			SELECT #{page_now} AS CURRENT_INDEX
+				,#{per_page} AS RECORD_PER_PAGE
+				FROM DUAL
+		), DATA_LIST AS (
+			SELECT
+				ROW_NUMBER() OVER (PARTITION BY 1 ORDER BY A.PROGRAM_NM) AS rno
+				,A.PROGRAM_NM						/* 프로그램명 */
+				,A.PROGRAM_DETAIL					/* 프로그램 설명 */
+				,A.TIME_DETAIL						/* 운영시간 */
+				,A.TRGTER_DETAIL					/* 대상자 */
+				,A.FEE_DETAIL						/* 이용료 */
+				,(SELECT LISTAGG(PICTURE_PATH ||'/'|| PICTURE_NM, '§§') WITHIN GROUP (ORDER BY PROGRAM_CD) FROM
+					DPWFMS.WFFCLTY_PROGRAM_PITCURE
+					WHERE WFFCLTY_CD = A.WFFCLTY_CD AND PROGRAM_CD = A.PROGRAM_CD) AS PIC			/* 프로그램 이미지 */
+			FROM DPWFMS.WFFCLTY_PROGRAM A WHERE A.WFFCLTY_CD = #{wcd} AND A.OPERATE_FG = 1
+		)
+		SELECT
+			*
+			FROM DATA_LIST D
+			,STND ST
+		WHERE D.RNO BETWEEN (((ST.CURRENT_INDEX -1) * ST.RECORD_PER_PAGE) + 1) AND (ST.CURRENT_INDEX * ST.RECORD_PER_PAGE);
+	</select>
+
+	<!-- 시설 프로그램 리스트 카운터 -->
+	<select id="facilityProgramsListCount"  parameterType="java.util.Map" resultType="int">
+		SELECT
+			COUNT(*)
+		FROM DPWFMS.WFFCLTY_PROGRAM
+		 WHERE WFFCLTY_CD = #{wcd} AND OPERATE_FG = 1
+	</select>
+
+	<!-- 시설명 -->
+	<select id="facilityDetailTitle"  parameterType="java.util.Map" resultType="java.util.HashMap">
+		WITH TEMP AS (
+			SELECT
+				A.WFFCLTY_NM		/* 복지시설명 */
+			FROM
+			DPWFMS.WFFCLTY_BASE A
+			,DPWFMS.WFFCLTY_DETAIL B
+			WHERE A.WFFCLTY_CD = B.WFFCLTY_CD
+			AND A.WFFCLTY_CD = #{wcd}
+			AND A.USE_FG = '1'
+		)
+		SELECT
+			*
+			FROM TEMP
+	</select>
+
+
+	<!-- 예약현황 리스트 -->
+	<select id="regList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+		WITH STND AS (
+			SELECT #{page_now} AS CURRENT_INDEX
+				,#{per_page} AS RECORD_PER_PAGE
+				FROM DUAL
+		), DATA_LIST AS (
+			SELECT
+				ROW_NUMBER() OVER (PARTITION BY 1 ORDER BY CONCAT(A.RECEIVE_DD, A.RECEIVE_TM) DESC) AS rno,
+				RANK() OVER(PARTITION BY A.WFFCLTY_CD, A.PROGRESS_STS ORDER BY CONCAT(A.RECEIVE_DD, A.RECEIVE_TM) ASC) AS RANK,
+				B.WFFCLTY_NM,
+				A.RECEIVE_DD,
+				A.RECEIVE_SEQNO,
+				A.RECEIVE_TM,
+				A.RSVCTM,
+				A.PROGRESS_STS,
+				A.WFFCLTY_CD,
+				CASE A.PROGRESS_STS WHEN '0' THEN '예약'
+				WHEN '1' THEN '예약취소'
+				WHEN '2' THEN '예약접수'
+				WHEN '3' THEN '예약접수취소'
+				END AS REG_TEXT
+			FROM DPWFMS.WFFCLTY_AWAITER A, DPWFMS.WFFCLTY_BASE B
+			WHERE A.WFFCLTY_CD = B.WFFCLTY_CD AND A.REGISTERER = 'HOMEPAGE'
+			AND B.USE_FG = '1'
+			<if test="name != null and name != ''">
+				AND A.RSVCTM = #{name}
+			</if>
+			<if test="enc_phone_num != null and enc_phone_num != ''">
+				AND A.ENC_PHONE_NUM = (SELECT DPWFMS.enc_b64('KEY1', #{tel}) FROM DUAL)
+			</if>
+		)
+		SELECT
+			*
+			FROM DATA_LIST D
+			,STND ST
+		WHERE D.RNO BETWEEN (((ST.CURRENT_INDEX -1) * ST.RECORD_PER_PAGE) + 1) AND (ST.CURRENT_INDEX * ST.RECORD_PER_PAGE)
+		ORDER BY rno
+	</select>
+
+	<!-- 예약현황 리스트 카운터 -->
+	<select id="regListCount"  parameterType="java.util.Map" resultType="int">
+		SELECT
+			COUNT(*)
+		FROM DPWFMS.WFFCLTY_AWAITER A, DPWFMS.WFFCLTY_BASE B
+			WHERE A.WFFCLTY_CD = B.WFFCLTY_CD AND A.REGISTERER = 'HOMEPAGE'
+			AND B.USE_FG = '1'
+		<if test="name != null and name != ''">
+			AND A.RSVCTM = #{name}
+		</if>
+		<if test="enc_phone_num != null and enc_phone_num != ''">
+			AND A.ENC_PHONE_NUM = (SELECT DPWFMS.enc_b64('KEY1', #{tel}) FROM DUAL)
+		</if>
+	</select>
+
+   <!-- 예약현황 비밀번호 확인 -->
+   <select id="regCheckBoard" parameterType="java.util.Map" resultType="int">
+   		SELECT COUNT(*)
+   			FROM DPWFMS.WFFCLTY_AWAITER
+   			WHERE ENC_PASSWORD = (SELECT HASH_STR('71', #{req_pwd}) FROM DUAL)
+			AND ENC_PHONE_NUM = (SELECT DPWFMS.enc_b64('KEY1', #{tel}) FROM DUAL)
+			AND RSVCTM = #{name}
+			AND RECEIVE_DD = #{dd}
+			AND RECEIVE_SEQNO = #{seq}
+   </select>
+
+   <!-- 시설 상세내용 -->
+	<select id="regDetail"  parameterType="java.util.Map" resultType="java.util.HashMap">
+		SELECT
+			B.WFFCLTY_NM,
+			A.RECEIVE_DD,
+			A.RECEIVE_SEQNO,
+			A.RECEIVE_TM,
+			A.RSVCTM,
+			A.PROGRESS_STS,
+			A.WFFCLTY_CD,
+			A.EMAIL,
+			A.NOTE,
+			A.DISABLE_TP,
+			A.DISABLE_DGREE_FG,
+			CASE A.PROGRESS_STS WHEN '0' THEN '예약'
+			WHEN '1' THEN '예약취소'
+			WHEN '2' THEN '예약접수'
+			WHEN '3' THEN '예약접수취소'
+			END AS REG_TEXT,
+			(
+				SELECT
+					COMMCD_VALUE	/* 코드타이틀 */
+				FROM DPWFMS.COMMON_CODE
+				WHERE COMMCD_FG = 'TP05'
+				AND USE_FG = '1'
+				AND COMMCD = A.DISABLE_TP
+			) AS DISABLE_TEXT,
+			(
+				SELECT
+					COMMCD_VALUE	/* 코드타이틀 */
+				FROM DPWFMS.COMMON_CODE
+				WHERE COMMCD_FG = 'FG12'
+				AND USE_FG = '1'
+				AND COMMCD = A.DISABLE_DGREE_FG
+			) AS DISABLE_DGREE_TEXT
+		FROM DPWFMS.WFFCLTY_AWAITER A, DPWFMS.WFFCLTY_BASE B
+			WHERE A.WFFCLTY_CD = B.WFFCLTY_CD AND A.REGISTERER = 'HOMEPAGE'
+			AND A.RECEIVE_DD = #{dd}
+			AND A.RECEIVE_SEQNO = #{seq}
+			AND B.USE_FG = '1'
+	</select>
+
+	<!-- 예약현황 접수취소 update -->
+	<update id="regCancel" parameterType="java.util.Map">
+	 	UPDATE DPWFMS.WFFCLTY_AWAITER SET
+			PROGRESS_STS = 1
+		WHERE RECEIVE_DD = #{dd}
+		AND RECEIVE_SEQNO = #{seq}
+	</update>
+
+</mapper>

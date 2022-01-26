@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="boardMgr">
+ 
+  <!-- 게시판관리 리스트 -->
+  <select id="boardMgrList" parameterType="java.util.Map"   resultType="java.util.Map">  	
+          SELECT  A.*,
+          (SELECT CD_NM FROM TB_CODE WHERE COMM_CD = A.BRD_SKIN_CD AND CD_TYPE = 'SKIN') AS CD_NM,
+          (SELECT COUNT(*) FROM TB_BOARD WHERE BRD_MGRNO = A.BRD_MGRNO AND IS_COMMENT = 0) AS BRD_REG_CNT      
+	      FROM TB_BOARDMGR A  
+	      WHERE 1 = 1
+	      <include refid="listSearch"></include>
+	      <where>
+	         <if test="use_yn != null"> AND A.use_yn = #{use_yn} </if>
+	      </where>
+	     <if test="sort_ord != null"> ORDER BY ${sort_ord} </if>
+	     <if test="sort_ord == null"> ORDER BY A.BRD_MGRNO DESC</if> 
+  </select>     
+ 
+ <!-- 게시판관리 리스트 카운터 -->
+  <select id="boardMgrCount" parameterType="java.util.Map"   resultType="int">      
+	      SELECT count(*)
+	      FROM TB_BOARDMGR A        
+		  WHERE 1 = 1
+		  <include refid="listSearch"></include>
+	      <where>
+	         <if test="use_yn   != null"> AND A.use_yn    = #{use_yn} </if>
+	      </where>
+   </select>    
+
+  <!-- 리스트 검색조건 -->
+  <sql id="listSearch">
+		<if test="keyword !=null and keyword != '' ">
+			 <if test="keykind == 'brd_nm'">  AND A.BRD_NM  like '%' || #{keyword} || '%' </if>
+			 <if test="keykind == ''">  AND (A.BRD_NM  like '%' || #{keyword} || '%') </if>
+		</if>	
+		<if test="txt_sdate != null and txt_sdate != '' and txt_edate != null and txt_edate != ''">
+			AND SUBSTR(A.REG_DT,1,8) BETWEEN REPLACE(#{txt_sdate}, '-','') AND REPLACE(#{txt_edate}, '-','')
+		</if>
+  </sql>
+  
+  <!-- 게시판관리 상세내용 -->
+  <select id="boardMgrDetail"  parameterType="java.util.Map" resultType="java.util.Map">  	  	 
+	      SELECT  A.* 
+	      FROM TB_BOARDMGR A 
+	      WHERE BRD_MGRNO = #{brd_mgrno, jdbcType=INTEGER}       
+  </select>  
+  
+  <!-- 게시판관리 INSERT -->
+   <insert  id="boardMgrInsert" parameterType="java.util.Map"  >
+		INSERT INTO TB_BOARDMGR
+		(
+			BRD_MGRNO,
+			BRD_NM,
+			BRD_SKIN_CD,
+			USE_YN,
+			LIST_CNT,
+			WRITE_LEVEL_CD,
+			LIST_LEVEL_CD,
+			READ_LEVEL_CD,
+			REPLY_LEVEL_CD,
+			COMMENT_LEVEL_CD,
+			REPLY_USE_YN,
+			CMT_USE_YN,
+			THM_WIDTH_SIZE,
+			THM_HEIGHT_SIZE,
+			URL_USE_YN,
+			DIRECT_URL_USE_YN,
+			CATE_CD_USE_YN,
+			CATE_CD,
+			ORDER_CD,
+			ATTACH_FILE_CNT,
+			SECRET_USE_YN,
+			NOTICE_YN,
+			ETC_FIELD1_USE_YN,
+			ETC_FIELD1_TITLE,
+			ETC_FIELD2_USE_YN,
+			ETC_FIELD2_TITLE,
+			ETC_FIELD3_USE_YN,
+			ETC_FIELD3_TITLE,
+			ETC_FIELD4_USE_YN,
+			ETC_FIELD4_TITLE,
+			ETC_FIELD5_USE_YN,
+			ETC_FIELD5_TITLE,
+			BRD_DESC,
+			REG_IP,
+			MD_DT,
+			REG_DT
+		) VALUES (      
+		    SEQ_TB_BOARDMGR_BRD_MGRNO.nextval , 
+			#{brd_nm,						jdbcType=VARCHAR},
+			#{brd_skin_cd,				jdbcType=VARCHAR},
+			#{use_yn,						jdbcType=CHAR},
+			#{list_cnt,						jdbcType=INTEGER},
+			#{write_level_cd,				jdbcType=VARCHAR},
+			#{list_level_cd,				jdbcType=VARCHAR},
+			#{read_level_cd,				jdbcType=VARCHAR},
+			#{reply_level_cd,				jdbcType=VARCHAR},
+			#{comment_level_cd,		jdbcType=VARCHAR},
+			#{reply_use_yn,				jdbcType=CHAR},
+			#{cmt_use_yn,				jdbcType=CHAR},
+			#{thm_width_size,			jdbcType=VARCHAR},
+			#{thm_height_size,			jdbcType=VARCHAR},
+			#{url_use_yn,					jdbcType=CHAR},
+			#{direct_url_use_yn,		jdbcType=CHAR},
+			#{cate_cd_use_yn,			jdbcType=CHAR},
+			#{cate_cd,						jdbcType=VARCHAR},
+			#{order_cd,					jdbcType=VARCHAR},
+			#{attach_file_cnt,			jdbcType=INTEGER},
+			#{secret_use_yn,			jdbcType=CHAR},
+			#{notice_yn,					jdbcType=CHAR},
+			#{etc_field1_use_yn, 		jdbcType=CHAR},
+			#{etc_field1_title, 			jdbcType=VARCHAR},
+			#{etc_field2_use_yn, 		jdbcType=CHAR},
+			#{etc_field2_title, 			jdbcType=VARCHAR},
+			#{etc_field3_use_yn, 		jdbcType=CHAR},
+			#{etc_field3_title, 			jdbcType=VARCHAR},
+			#{etc_field4_use_yn, 		jdbcType=CHAR},
+			#{etc_field4_title,			jdbcType=VARCHAR},
+			#{etc_field5_use_yn, 		jdbcType=CHAR},
+			#{etc_field5_title, 			jdbcType=VARCHAR}, 
+			#{brd_desc, 					jdbcType=VARCHAR},
+			#{reg_ip, 						jdbcType=VARCHAR},
+			to_char(sysdate, 'yyyymmddhh24miss'), 
+			to_char(sysdate, 'yyyymmddhh24miss') 
+		)
+  </insert> 
+  
+  <!-- 게시판 관리 UPDATE -->
+   <update id="boardMgrUpdate" parameterType="java.util.Map" >
+   		UPDATE TB_BOARDMGR SET
+			BRD_NM	=							#{brd_nm,						jdbcType=VARCHAR},
+			BRD_SKIN_CD =					#{brd_skin_cd,				jdbcType=VARCHAR},
+			USE_YN =							#{use_yn,						jdbcType=CHAR},
+			LIST_CNT = 						#{list_cnt,						jdbcType=INTEGER},
+			WRITE_LEVEL_CD = 				#{write_level_cd,				jdbcType=VARCHAR},
+			LIST_LEVEL_CD = 				#{list_level_cd,				jdbcType=VARCHAR},
+			READ_LEVEL_CD = 				#{read_level_cd,				jdbcType=VARCHAR},
+			REPLY_LEVEL_CD = 				#{reply_level_cd,				jdbcType=VARCHAR},
+			COMMENT_LEVEL_CD =			#{comment_level_cd,		jdbcType=VARCHAR},
+			REPLY_USE_YN =					#{reply_use_yn,				jdbcType=CHAR},
+			CMT_USE_YN =					#{cmt_use_yn,				jdbcType=CHAR},
+			THM_WIDTH_SIZE =				#{thm_width_size,			jdbcType=VARCHAR},
+			THM_HEIGHT_SIZE = 			#{thm_height_size,			jdbcType=VARCHAR},
+			URL_USE_YN =						#{url_use_yn,					jdbcType=CHAR},
+			DIRECT_URL_USE_YN =			#{direct_url_use_yn,		jdbcType=CHAR},
+			CATE_CD_USE_YN =				#{cate_cd_use_yn,			jdbcType=CHAR},
+			CATE_CD =							#{cate_cd,						jdbcType=VARCHAR},
+			ORDER_CD =						#{order_cd,					jdbcType=VARCHAR},
+			ATTACH_FILE_CNT =				#{attach_file_cnt,			jdbcType=INTEGER},
+			SECRET_USE_YN =				#{secret_use_yn,			jdbcType=CHAR},
+			NOTICE_YN = 						#{notice_yn,					jdbcType=CHAR},
+			ETC_FIELD1_USE_YN = 			#{etc_field1_use_yn, 		jdbcType=CHAR},
+			ETC_FIELD1_TITLE = 			#{etc_field1_title, 			jdbcType=VARCHAR},
+			ETC_FIELD2_USE_YN =			#{etc_field2_use_yn, 		jdbcType=CHAR},
+			ETC_FIELD2_TITLE =				#{etc_field2_title, 			jdbcType=VARCHAR},
+			ETC_FIELD3_USE_YN =			#{etc_field3_use_yn, 		jdbcType=CHAR},
+			ETC_FIELD3_TITLE =				#{etc_field3_title, 			jdbcType=VARCHAR},
+			ETC_FIELD4_USE_YN =			#{etc_field4_use_yn, 		jdbcType=CHAR},
+			ETC_FIELD4_TITLE =				#{etc_field4_title,			jdbcType=VARCHAR},
+			ETC_FIELD5_USE_YN = 			#{etc_field5_use_yn, 		jdbcType=CHAR},
+			ETC_FIELD5_TITLE =				#{etc_field5_title, 			jdbcType=VARCHAR}, 
+			BRD_DESC =						#{brd_desc, 					jdbcType=VARCHAR},
+			REG_IP =							#{reg_ip, 						jdbcType=VARCHAR},
+			MD_DT =							to_char(sysdate, 'yyyymmddhh24miss')
+		WHERE BRD_MGRNO = 				#{brd_mgrno,  				jdbcType=INTEGER }
+   </update>
+  	
+  	  <!-- 게시판 관리 DELETE -->
+	  <delete id="boardMgrDelete" parameterType="java.util.Map" >
+			DELETE FROM TB_BOARDMGR   
+			WHERE BRD_MGRNO = #{brd_mgrno}               
+	  </delete>   
+	  
+	  <!-- 게시판에 모든 글 삭제 -->
+  	  <delete id="boardAllDelete" parameterType="java.util.Map">
+  	  		DELETE FROM TB_BOARD
+  	  		WHERE BRD_MGRNO = #{brd_mgrno}     
+  	  </delete>
+</mapper>

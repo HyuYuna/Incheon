@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="common">
+<!--  cache eviction="WEAK" flushInterval="30000" readOnly="true" size="512"></cache  -->
+ 	
+ 	<!-- 캘린더 출력 (월별 일자로 출력) -->
+    <select id="getCalendar"  parameterType="java.util.Map" resultType="java.util.HashMap">
+		 with t as( 
+		    select to_date(substr(#{yyyymm}, 1, 6) ,'yyyymm') ym from dual) 
+		    select SUN,MON,TUE,WED,THU,FRI,SAT from ( 
+		    select 
+		        ceil((to_char(ym,'d')+level-1)/7) rn, 
+		        max(decode(to_char(ym+level-1,'d'),1,level)) SUN, 
+		        max(decode(to_char(ym+level-1,'d'),2,level)) MON, 
+		        max(decode(to_char(ym+level-1,'d'),3,level)) TUE, 
+		        max(decode(to_char(ym+level-1,'d'),4,level)) WED, 
+		        max(decode(to_char(ym+level-1,'d'),5,level)) THU, 
+		        max(decode(to_char(ym+level-1,'d'),6,level)) FRI, 
+		        max(decode(to_char(ym+level-1,'d'),7,level)) SAT 
+		    from t 
+		    connect by level <![CDATA[ < ]]> to_char(last_day(ym),'dd')+1 
+		    group by ceil((to_char(ym,'d')+level-1)/7) 
+		    order by rn 
+		)tt 
+    </select>
+ 
+     <select id="getCommonCodeList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+         SELECT 	cd_type, comm_cd AS CD, cd_nm AS NM, cd_nm2 AS NM2, cd_desc, comm_cd, cd_nm
+	     FROM 	TB_CODE 
+	     WHERE    comm_cd != '*'
+	     <if test="cd_type != null"> and CD_TYPE     =   #{cd_type}     </if>
+	     <if test="in_code != null"> and COMM_CD     IN ( ${in_code} )  </if>
+	     <if test="comm_cd != null"> and COMM_CD     IN ( #{comm_cd} )  </if>
+	     <if test="not_in  != null"> and COMM_CD NOT IN ( ${not_in} )   </if>
+	     <if test="keyword  != null"> and cd_nm LIKE '%' || #{keyword} ||'%'    </if>
+         <if test="ord  != null"> ORDER BY  ${ord} </if>
+         <if test="ord  == null"> ORDER BY ORD, COMM_CD </if> 
+     </select>
+  
+  	<select id="getCommonCodeCount" parameterType="java.util.Map"   resultType="int">      
+         SELECT count(*)
+ 	     FROM 	TB_CODE 
+	     WHERE    comm_cd != '*'
+	     <if test="cd_type != null"> and CD_TYPE     =   #{cd_type}     </if>
+	     <if test="in_code != null"> and COMM_CD     IN ( ${in_code} )  </if>
+	     <if test="keyword  != null"> and cd_nm LIKE '%' || #{keyword} ||'%'    </if>
+	     <if test="comm_cd != null"> and COMM_CD     IN ( #{comm_cd} )  </if>
+	     <if test="not_in  != null"> and COMM_CD NOT IN ( ${not_in} )   </if>
+     </select>
+  
+	 <select id="getCommonCodeDetail" parameterType="java.util.Map" resultType="java.util.HashMap">
+		   SELECT	cd_type, comm_cd, cd_nm, cd_nm2, cd_desc, reg_dt
+		   FROM 	TB_CODE
+		   WHERE  CD_TYPE = #{cd_type} 
+           AND    COMM_CD = #{comm_cd}
+	 </select> 
+ 
+     <select id="getCodeChooseList" parameterType="java.util.Map" resultType="java.util.HashMap">
+	       SELECT cd_type, comm_cd, cd_nm, cd_nm2, cd_desc
+	       FROM  TB_CODE
+	       WHERE CD_TYPE = #{cd_type} 
+	       AND   #{code_list} like '%' || cd || '%'                
+	       ORDER BY comm_cd asc
+	 </select> 
+  
+     <select id="getUploadFile" parameterType="java.util.Map" resultType="java.util.HashMap">
+	       SELECT  *    
+	       FROM TB_FILE
+	       WHERE 1=1 
+	           <if test="file_no    != null and file_no !='' "> AND FILE_NO     = #{file_no}  </if>
+	           <if test="file_gbn   != null and file_gbn !='' "> AND FILE_GBN    = #{file_gbn}	</if>
+	           <if test="rel_tbl    != null and rel_tbl !='' "> AND REL_TBL     = #{rel_tbl}	</if>
+	           <if test="rel_key    != null and rel_key !='' "> AND REL_KEY     = #{rel_key}  </if>
+	           <if test="s_file_gbn != null and s_file_gbn !='' "> AND FILE_GBN LIKE #{s_file_gbn} || '%' </if>
+               <if test="lstSeq != null"> 
+                   AND file_no IN 
+                    <foreach item="idItem" index="index" collection="lstSeq"  open="(" separator="," close=")"> 
+                        #{idItem} 
+                  </foreach> 
+               </if> 
+  	       ORDER BY FILE_NO ASC
+     </select> 			
+ 
+     <insert id="insertUpload" parameterType="java.util.Map" >
+	      INSERT INTO TB_FILE 
+	      (
+	          FILE_NO     ,
+	          FILE_NM     , 
+	          FILE_REALNM ,
+	          FILE_GBN    , 
+	          FILE_EXT    , 
+	          FILE_SIZE   ,
+	          REL_TBL     ,
+	          REL_KEY     ,
+	          DES1        ,
+	          DES2        ,
+	          REG_DT   
+	      ) VALUES (
+	          SEQ_TB_FILE_FILE_NO.nextval,
+	          #{file_nm     , jdbcType=VARCHAR} , 
+	          #{file_realnm , jdbcType=VARCHAR} ,
+	          #{file_gbn    , jdbcType=VARCHAR} ,
+	          #{file_ext    , jdbcType=VARCHAR} ,
+	          #{file_size   , jdbcType=INTEGER} , 
+	          #{rel_tbl     , jdbcType=VARCHAR} ,
+	          #{rel_key     , jdbcType=VARCHAR} ,  	         
+	          #{file_des1   , jdbcType=VARCHAR} ,
+	          #{file_des2   , jdbcType=VARCHAR} ,
+	          to_char(sysdate, 'yyyymmddhh24miss')    
+	      )
+     </insert>
+   
+     <update id="updateUpload" parameterType="java.util.Map">
+         UPDATE TB_FILE
+         SET  FILE_NM      = #{file_nm   , jdbcType=VARCHAR} , 
+              FILE_REALNM  = #{file_realnm , jdbcType=VARCHAR} ,
+              FILE_GBN     = #{file_gbn  , jdbcType=VARCHAR} ,   
+              FILE_EXT     = #{file_ext  , jdbcType=VARCHAR} ,
+              FILE_SIZE    = #{file_size , jdbcType=INTEGER} , 
+              REL_TBL      = #{rel_tbl   , jdbcType=VARCHAR} ,
+	          REL_KEY      = #{rel_key   , jdbcType=VARCHAR} , 
+	          WIDTH        = #{width     , jdbcType=INTEGER} ,  
+	          HEIGHT       = #{height    , jdbcType=INTEGER} 
+         WHERE FILE_NO     = #{file_no   , jdbcType=INTEGER}
+     </update>
+   
+     <update id="updateDescUpload" parameterType="java.util.Map">
+         UPDATE TB_FILE
+         SET  DES1         = #{file_des1   , jdbcType=VARCHAR}, 
+	          DES2         = #{file_des2   , jdbcType=VARCHAR}         
+	     WHERE FILE_NO     = #{file_no}
+     </update>
+
+     <update id="updateFileDownCnt" parameterType="java.util.Map">
+         UPDATE TB_FILE
+         SET  FILE_DOWN_CNT         = FILE_DOWN_CNT + 1
+	     WHERE FILE_NO     = #{file_no}
+     </update> 
+ 
+     <delete id="removeUpload" parameterType="java.util.Map">
+	   	 DELETE FROM  TB_FILE 
+	   	 WHERE  FILE_NO = #{file_no , jdbcType=INTEGER}
+	   	 <if test="rel_tbl != null" > OR (REL_TBL  = #{rel_tbl} AND REL_KEY   = #{rel_key} ) </if>
+     </delete>       
+          
+     <delete id="removeTblUpload" parameterType="java.util.Map">
+	   	 DELETE FROM  TB_FILE 
+	   	 WHERE  REL_TBL  = #{rel_tbl}  	 	   	 
+     </delete>       
+
+</mapper>

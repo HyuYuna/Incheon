@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper      
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"      
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="contents">
+  <!--  cache eviction="WEAK" flushInterval="30000" readOnly="true" size="512"></cache  -->
+ 
+   <resultMap type="java.util.Map" id="boardMap">
+     <result property="CTNT" column="CTNT" javaType="String" jdbcType="CLOB"/>
+  </resultMap>
+ 
+  <select id="contentsHistList" parameterType="java.util.Map"   resultMap="boardMap">  	
+          SELECT  A.*      
+	      FROM TB_CONTENTSHIST A
+	      WHERE  A.menu_no = #{menu_no} 
+		  ORDER BY  A.hist_no desc	 
+		        
+  </select>     
+ 
+  <select id="contentsList" parameterType="java.util.Map"   resultMap="boardMap">  	
+          SELECT  A.*      
+	      FROM TB_CONTENTS A  
+	      <where>
+	         <if test="ttl      != null"> AND A.ttl     = #{ttl} </if>
+	         <if test="menu_no  != null"> AND A.menu_no = #{menu_no} </if>
+	         <if test="cts_no  != null"> AND A.cts_no = #{cts_no} </if>
+	         <if test="use_yn   != null"> AND A.use_yn  = #{use_yn} </if>
+	      </where>
+		  ORDER BY A.cts_no ASC	       
+  </select>     
+
+  <select id="contentsCount" parameterType="java.util.Map"   resultType="int">      
+	      SELECT count(*)
+	      FROM TB_CONTENTS A  
+	      <where>
+	         <if test="ttl      != null"> AND A.ttl     = #{ttl} </if>
+	         <if test="menu_no  != null"> AND A.menu_no = #{menu_no} </if>
+	         <if test="use_yn   != null"> AND A.use_yn  = #{use_yn} </if>
+	      </where>
+   </select>   
+ 
+  <select id="contentsNextValue" parameterType="java.util.Map"   resultType="int">
+	      SELECT SEQ_TB_CONTENTS_CTS_NO.nextval 
+	      FROM dual
+  </select>   
+  
+  <select id="contentsDetail"  parameterType="java.util.Map"   resultMap="boardMap">  	  	 
+	      SELECT  A.* 
+	      FROM TB_CONTENTS A 
+	      WHERE A.cts_no = #{cts_no, jdbcType=INTEGER}       
+  </select>  
+   
+  <insert  id="contentsInsert" parameterType="java.util.Map"  >
+		INSERT INTO TB_CONTENTS
+		(
+		         CTS_NO          ,
+		         TTL             ,
+		         CTNT            ,
+		         USE_YN          ,
+		         MENU_NO         ,
+		         REG_DT          ,
+		         REG_ID          ,
+		         REG_NM			 ,
+		         CTS_URL		 ,
+		         URL_TARGET		 ,
+		         URL_USE_YN
+		) VALUES (      
+		          #{cts_no            , jdbcType=INTEGER } ,
+		         #{ttl                , jdbcType=VARCHAR } ,
+		         #{ctnt               , javaType=String, jdbcType=CLOB} ,
+		         #{use_yn             , jdbcType=VARCHAR } ,
+		         #{menu_no            , jdbcType=INTEGER } ,
+		         to_char(sysdate, 'yyyymmddhh24miss')  ,
+		         #{reg_id             , jdbcType=VARCHAR } ,
+		         #{reg_nm             , jdbcType=VARCHAR } ,
+		         #{cts_url			  , jdbcType=VARCHAR } ,
+		         #{url_target		  , jdbcType=VARCHAR } ,
+		         #{url_use_yn         , jdbcType=CHAR}       
+		)
+  </insert>   
+   
+ <insert  id="contentsHistInsert" parameterType="java.util.Map"  >
+		INSERT INTO TB_CONTENTSHIST
+		(
+		         HIST_NO         ,
+		         CTS_NO          ,
+		         TTL             ,
+		         CTNT            ,
+		         USE_YN          ,
+		         MENU_NO         ,
+		         PROC_DESC       ,
+		         REG_DT          ,
+		         REG_ID          ,
+		         REG_NM
+		) VALUES (      
+		         SEQ_TB_CONTENTSHIST_HIST_NO.nextval , 
+		         #{cts_no             , jdbcType=INTEGER } ,
+		         #{ttl                , jdbcType=VARCHAR } ,
+		         #{ctnt               , javaType=String, jdbcType=CLOB} ,
+		         #{use_yn             , jdbcType=VARCHAR } ,
+		         #{menu_no            , jdbcType=INTEGER } ,
+		         #{proc_desc          , jdbcType=VARCHAR } ,
+		         to_char(sysdate, 'yyyymmddhh24miss'),
+		         #{reg_id             , jdbcType=VARCHAR },
+		         #{reg_nm             , jdbcType=VARCHAR }          
+		)
+  </insert>      
+ 
+  <update id="contentsUpdate" parameterType="java.util.Map" >
+		UPDATE TB_CONTENTS
+		SET      TTL       = #{ttl       , jdbcType=VARCHAR } ,  
+		         CTNT      = #{ctnt      , javaType=String, jdbcType=CLOB} , 
+		         USE_YN    = #{use_yn    , jdbcType=VARCHAR },
+		         CTS_URL	 = #{cts_url	  , jdbcType=VARCHAR } ,
+		         URL_TARGET  = #{url_target	  , jdbcType=VARCHAR } ,		 
+		         URL_USE_YN  =  #{url_use_yn  , jdbcType=CHAR}
+		WHERE    CTS_NO    = #{cts_no    , jdbcType=INTEGER }     
+  </update>     
+
+  <delete id="contentsDelete" parameterType="java.util.Map" >
+		DELETE FROM TB_CONTENTS   
+		WHERE  CTS_NO    = #{cts_no    , jdbcType=INTEGER }          
+  </delete>  
+  
+  <select id="contentTabName" parameterType="java.util.Map" resultType="java.util.Map">
+  		SELECT MAX(DECODE(RN, #{tab_no, jdbcType=INTEGER}, B.TTL)) AS TTL
+		FROM (
+		  SELECT A.*,
+		         ROW_NUMBER() OVER(ORDER BY CTS_NO ASC) RN
+		  FROM TB_CONTENTS A
+		  WHERE A.MENU_NO = #{menu_no, jdbcType=INTEGER}
+		  ) B
+  </select>    
+
+</mapper>
